@@ -111,22 +111,24 @@
   }
 
   /* Recueil */
-  .recueil { justify-content: center; align-items: center; text-align: center; }
-  .recueil .mic-bottom { margin-top: 22px; width: 100%; }
+  .recueil { justify-content: flex-start; align-items: center; text-align: center; padding-top: 24px; }
+  .recueil .mic-wrap { margin-top: 22px; }
+  .recueil .mic-bottom { margin-top: auto; width: 100%; }
   .greet { color: var(--ink-faint); font-size: 13px; margin-bottom: 2px; }
   .prompt { font-size: 21px; max-width: 280px; margin: 0 auto; }
-  .mic-hint { font-size: 12px; color: var(--ink-faint); max-width: 280px; line-height: 1.5; margin: 0 auto; }
-  .recit-field { position: relative; width: 100%; margin-top: 18px; }
-  .recit-textarea { width: 100%; min-height: 200px; padding-right: 46px; text-align: left; }
-  .mic-inline {
-    position: absolute; top: 10px; right: 10px; width: 34px; height: 34px; border-radius: 50%;
-    background: var(--accent); border: none; color: var(--card); display: flex; align-items: center;
-    justify-content: center; cursor: pointer; box-shadow: 0 6px 14px -4px hsl(var(--shadow) / 0.4);
-  }
-  .mic-inline.recording { background: var(--rose); }
+  .mic-wrap { position: relative; width: 148px; height: 148px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .mic-ring { position: absolute; inset: 0; border-radius: 50%; border: 1px solid var(--accent); opacity: 0.35; }
+  .mic-ring.pulse { animation: pulse 2.6s ease-out infinite; }
+  .mic-ring.d2 { animation-delay: .9s; } .mic-ring.d3 { animation-delay: 1.8s; }
+  @keyframes pulse { 0% { transform: scale(0.7); opacity: 0.5; } 100% { transform: scale(1.45); opacity: 0; } }
+  .mic-btn { width: 92px; height: 92px; border-radius: 50%; background: var(--accent); border: none; color: var(--card); display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 12px 24px -8px hsl(var(--shadow) / 0.4); }
+  .mic-btn.recording { background: var(--rose); }
+  .mic-hint { font-size: 12px; color: var(--ink-faint); max-width: 240px; line-height: 1.5; margin: 0 auto; }
+  .text-toggle { font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-soft); background: none; border: 1px solid var(--line); border-radius: 999px; padding: 8px 16px; cursor: pointer; }
   .recit-preview { width: 100%; text-align: left; background: var(--card-2); border-radius: 12px; padding: 12px; font-size: 13.5px; line-height: 1.5; max-height: 160px; overflow-y: auto; margin-top: 14px; }
+  .recit-textarea { width: 100%; min-height: 140px; margin-top: 14px; text-align: left; }
 
-  .mic-bg { position: absolute; left: 0; right: 0; top: 60px; height: 220px; pointer-events: none; z-index: 0; overflow: hidden; }
+  .mic-bg { position: absolute; left: 0; right: 0; top: 118px; height: 300px; pointer-events: none; z-index: 0; overflow: hidden; }
   .mic-bg img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 50%; filter: grayscale(1) contrast(1.15) brightness(1.08); opacity: 0.4; -webkit-mask-image: linear-gradient(180deg, black 0%, black 88%, transparent 100%); mask-image: linear-gradient(180deg, black 0%, black 88%, transparent 100%); }
   :root:not([data-theme="light"]) .mic-bg img, :root[data-theme="dark"] .mic-bg img { filter: grayscale(1) contrast(1.05) brightness(0.68); opacity: 0.45; }
 
@@ -317,9 +319,18 @@ function renderRecueil() {
         <div class="greet">Bonjour ${escapeHtml(first)}</div>
         <div class="prompt display">Racontez votre rêve,<br>là, tout de suite.</div>
       </div>
+      <div class="mic-wrap">
+        <div class="mic-ring" id="ring1"></div>
+        <div class="mic-ring d2" id="ring2"></div>
+        <div class="mic-ring d3" id="ring3"></div>
+        <button class="mic-btn" id="mic-btn" aria-label="Démarrer l'enregistrement">
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+        </button>
+      </div>
       <div id="recit-area"></div>
       <div class="mic-bottom">
-        <p class="mic-hint" id="mic-hint">Écrivez comme si vous y étiez encore, ou dictez avec le micro.</p>
+        <p class="mic-hint" id="mic-hint">Parlez comme si vous y étiez encore. On transcrit pendant que le rêve est frais.</p>
+        <button class="text-toggle" id="text-toggle" style="margin-top:14px;">Écrire plutôt</button>
         <div class="footer-actions" id="recueil-actions" style="display:none;">
           <button class="btn btn-primary btn-block" id="recueil-continue">Continuer →</button>
         </div>
@@ -332,19 +343,12 @@ function renderRecueil() {
   const recitArea = $('#recit-area');
   const actions = $('#recueil-actions');
   const micHint = $('#mic-hint');
-  const defaultHint = 'Écrivez comme si vous y étiez encore, ou dictez avec le micro.';
+  const defaultHint = 'Parlez comme si vous y étiez encore. On transcrit pendant que le rêve est frais.';
 
   function showTextArea(prefill) {
-    recitArea.innerHTML = `
-      <div class="recit-field">
-        <textarea class="kw-input recit-textarea" id="recit-text" placeholder="Racontez ce dont vous vous souvenez…">${escapeHtml(prefill || '')}</textarea>
-        ${SpeechRec ? `<button class="mic-inline" id="mic-btn" type="button" aria-label="Dicter">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
-        </button>` : ''}
-      </div>`;
+    recitArea.innerHTML = `<textarea class="kw-input recit-textarea" id="recit-text" placeholder="Racontez ce dont vous vous souvenez…">${escapeHtml(prefill || '')}</textarea>`;
     $('#recit-text').addEventListener('input', updateContinueState);
     updateContinueState();
-    if (SpeechRec) bindMic();
   }
   function updateContinueState() {
     const el = $('#recit-text');
@@ -353,51 +357,58 @@ function renderRecueil() {
     state.recit = val;
   }
 
-  function bindMic() {
-    const micBtn = $('#mic-btn');
-    if (!micBtn) return;
-    micBtn.onclick = () => {
-      if (recognizing) { recognition.stop(); return; }
-      recognition = new SpeechRec();
-      recognition.lang = 'fr-FR';
-      recognition.continuous = true;
-      recognition.interimResults = true;
-      let finalTranscript = state.recit ? state.recit + ' ' : '';
-      recognition.onstart = () => {
-        recognizing = true;
-        micBtn.classList.add('recording');
-        micHint.textContent = 'Je vous écoute…';
-      };
-      recognition.onresult = (event) => {
-        let interim = '';
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          const t = event.results[i][0].transcript;
-          if (event.results[i].isFinal) finalTranscript += t + ' ';
-          else interim += t;
-        }
-        const el = $('#recit-text');
-        if (el) { el.value = (finalTranscript + interim).trim(); updateContinueState(); }
-      };
-      recognition.onerror = (e) => {
-        const messages = {
-          'not-allowed': "Micro bloqué. Cliquez sur l'icône de cadenas/site dans la barre d'adresse Chrome → Autorisations du site → Microphone → Autoriser, puis rechargez la page. Vérifiez aussi Réglages système macOS → Confidentialité et sécurité → Microphone → Chrome activé.",
-          'service-not-allowed': "Le service de dictée n'est pas disponible dans ce contexte.",
-          'no-speech': "Rien entendu — réessayez en parlant après le clic.",
-          'network': "Problème réseau pendant la dictée — réessayez.",
-          'audio-capture': "Aucun micro détecté sur cet appareil.",
-        };
-        micHint.textContent = messages[e.error] || `Problème de dictée (${e.error}) — vous pouvez écrire directement.`;
-      };
-      recognition.onend = () => {
-        recognizing = false;
-        micBtn.classList.remove('recording');
-        micHint.textContent = defaultHint;
-      };
-      recognition.start();
-    };
-  }
+  $('#text-toggle').onclick = () => {
+    showTextArea(state.recit);
+    $('#recit-text').focus();
+  };
 
-  showTextArea(state.recit);
+  $('#mic-btn').onclick = () => {
+    if (!SpeechRec) {
+      micHint.textContent = "La dictée vocale n'est pas disponible sur ce navigateur — utilisez « Écrire plutôt ».";
+      return;
+    }
+    if (recognizing) {
+      recognition.stop();
+      return;
+    }
+    recognition = new SpeechRec();
+    recognition.lang = 'fr-FR';
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    let finalTranscript = state.recit || '';
+    showTextArea(finalTranscript);
+    recognition.onstart = () => {
+      recognizing = true;
+      $('#mic-btn').classList.add('recording');
+      micHint.textContent = 'Je vous écoute…';
+    };
+    recognition.onresult = (event) => {
+      let interim = '';
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const t = event.results[i][0].transcript;
+        if (event.results[i].isFinal) finalTranscript += t + ' ';
+        else interim += t;
+      }
+      const el = $('#recit-text');
+      if (el) { el.value = (finalTranscript + interim).trim(); updateContinueState(); }
+    };
+    recognition.onerror = (e) => {
+      const messages = {
+        'not-allowed': "Micro bloqué. Cliquez sur l'icône de cadenas/site dans la barre d'adresse Chrome → Autorisations du site → Microphone → Autoriser, puis rechargez la page. Vérifiez aussi Réglages système macOS → Confidentialité et sécurité → Microphone → Chrome activé.",
+        'service-not-allowed': "Le service de dictée n'est pas disponible dans ce contexte.",
+        'no-speech': "Rien entendu — réessayez.",
+        'network': "Problème réseau pendant la dictée — réessayez.",
+        'audio-capture': "Aucun micro détecté sur cet appareil.",
+      };
+      micHint.textContent = messages[e.error] || `Problème de dictée (${e.error}) — vous pouvez écrire directement.`;
+    };
+    recognition.onend = () => {
+      recognizing = false;
+      $('#mic-btn').classList.remove('recording');
+      micHint.textContent = defaultHint;
+    };
+    recognition.start();
+  };
 
   $('#recueil-continue').onclick = async () => {
     if (!state.recit) return;
