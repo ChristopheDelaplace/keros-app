@@ -88,7 +88,6 @@
   .auth-view { justify-content: flex-start; padding-top: 40px; }
   .auth-image { width: 112px; height: 148px; margin: 6px auto 0; border-radius: 18px; overflow: hidden; background: var(--card-2); }
   .auth-image img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 22%; }
-  .auth-glyph { display: flex; justify-content: center; color: var(--accent); }
   .auth-brand-top { text-align: center; font-family: 'Fraunces', Georgia, serif; font-size: 14px; font-weight: 500; letter-spacing: -0.01em; color: var(--ink-faint); }
   .field { display: flex; flex-direction: column; gap: 6px; text-align: left; }
   .field label { font-size: 11px; font-family: 'IBM Plex Mono', monospace; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-faint); }
@@ -110,16 +109,21 @@
   .msg.ok { background: var(--accent-soft); color: var(--accent); }
 
   /* Nav */
-  .topnav { display: flex; justify-content: space-between; align-items: center; padding: 14px 22px 0; position: relative; z-index: 1; }
+  .topnav { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; padding: 14px 22px 0; position: relative; z-index: 1; }
+  .topnav .journal-link { justify-self: start; }
+  .topnav .logout-link { justify-self: end; }
+  .topnav .brand { justify-self: center; }
   .topnav .journal-link, .topnav .logout-link {
     font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase;
     color: var(--ink-soft); background: none; border: none; cursor: pointer; padding: 4px;
   }
 
   /* Recueil */
-  .recueil { justify-content: flex-start; align-items: center; text-align: center; padding-top: 24px; }
-  .recueil .mic-wrap { margin-top: 320px; }
+  .recueil { justify-content: flex-start; align-items: center; text-align: center; padding-top: 20px; }
+  .recueil .mic-wrap { margin-top: 18px; }
   .recueil .mic-bottom { margin-top: 26px; width: 100%; }
+  .recueil-image { width: 96px; height: 128px; margin: 4px auto 0; border-radius: 16px; overflow: hidden; background: var(--card-2); }
+  .recueil-image img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 22%; }
   .greet { color: var(--ink-faint); font-size: 13px; margin-bottom: 2px; }
   .prompt { font-size: 21px; max-width: 280px; margin: 0 auto; }
   .mic-wrap { position: relative; width: 148px; height: 148px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
@@ -134,9 +138,6 @@
   .recit-preview { width: 100%; text-align: left; background: var(--card-2); border-radius: 12px; padding: 12px; font-size: 13.5px; line-height: 1.5; max-height: 160px; overflow-y: auto; margin-top: 14px; }
   .recit-textarea { width: 100%; min-height: 140px; margin-top: 14px; text-align: left; }
 
-  .mic-bg { position: absolute; left: 0; right: 0; top: 90px; height: 380px; pointer-events: none; z-index: 0; overflow: hidden; }
-  .mic-bg img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 40%; mix-blend-mode: multiply; opacity: 0.9; -webkit-mask-image: linear-gradient(180deg, transparent 0%, black 16%, black 55%, transparent 88%); mask-image: linear-gradient(180deg, transparent 0%, black 16%, black 55%, transparent 88%); }
-  :root:not([data-theme="light"]) .mic-bg img, :root[data-theme="dark"] .mic-bg img { filter: invert(1) grayscale(1) contrast(1.05); mix-blend-mode: screen; opacity: 0.4; }
 
   /* Step card (sentiment/nom/contexte/associations) */
   .step-title { font-size: 22px; margin-bottom: 18px; text-align: center; }
@@ -188,12 +189,15 @@
   .fab { position: fixed; bottom: 24px; right: 24px; z-index: 5; }
 
   .footer-actions { display: flex; gap: 10px; margin-top: 16px; }
+
+  .footer-glyph { position: absolute; left: 0; right: 0; bottom: 12px; display: flex; justify-content: center; color: var(--accent); opacity: 0.55; pointer-events: none; z-index: 2; }
   .footer-actions .btn { flex: 1; }
 </style>
 </head>
 <body>
 <div class="frame" id="frame">
   <div id="app-root"></div>
+  <div class="footer-glyph" id="footer-glyph"></div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
@@ -259,12 +263,12 @@ function renderAuth() {
     <div class="view center auth-view">
       <div class="auth-box">
         <div class="auth-brand-top">mykeros</div>
-        <div class="auth-glyph">${GLYPH(24)}</div>
         <div class="auth-image"><img src="mykeros-figure.jpg" alt=""></div>
         <h1>${isSignup ? 'Créer un compte' : 'Bon retour'}</h1>
         <p style="color:var(--ink-soft);font-size:13px;margin:0 0 4px;">${isSignup ? 'Pour commencer à consigner vos rêves' : 'Content de vous revoir'}</p>
         <div id="auth-msg"></div>
         <form id="auth-form" class="auth-box" style="gap:12px;">
+          ${isSignup ? `<div class="field"><label>Prénom</label><input type="text" id="auth-prenom" required autocomplete="given-name"></div>` : ''}
           <div class="field"><label>Email</label><input type="email" id="auth-email" required autocomplete="email"></div>
           <div class="field"><label>Mot de passe</label><input type="password" id="auth-password" required minlength="6" autocomplete="${isSignup ? 'new-password' : 'current-password'}"></div>
           <button type="submit" class="btn btn-primary btn-block" id="auth-submit">${isSignup ? "S'inscrire" : "Se connecter"}</button>
@@ -284,7 +288,8 @@ function renderAuth() {
     msgEl.innerHTML = '';
     try {
       if (isSignup) {
-        const { error } = await sb.auth.signUp({ email, password });
+        const prenom = $('#auth-prenom')?.value.trim();
+        const { error } = await sb.auth.signUp({ email, password, options: { data: { prenom } } });
         if (error) throw error;
         msgEl.innerHTML = `<div class="msg ok">Compte créé. Si la confirmation par email est activée, vérifiez votre boîte avant de vous connecter.</div>`;
         state.authMode = 'signin';
@@ -303,7 +308,7 @@ function renderAuth() {
 function topNav(showJournal) {
   return `<div class="topnav">
     <button class="journal-link" id="nav-journal">${showJournal ? 'Journal' : ''}</button>
-    <span class="brand">${GLYPH(15)} mykeros</span>
+    <span class="brand">mykeros</span>
     <button class="logout-link" id="nav-logout">Sortir</button>
   </div>`;
 }
@@ -321,11 +326,12 @@ function renderRecueil() {
     try { recognition.onend = null; recognition.stop(); } catch (e) {}
   }
   recognizing = false;
-  const first = (state.profile?.email || '').split('@')[0];
+  const prenom = state.session?.user?.user_metadata?.prenom;
+  const first = prenom || (state.profile?.email || '').split('@')[0];
   h(`
     ${topNav(true)}
-    <div class="mic-bg"><img src="mykeros-figure.jpg" alt=""></div>
     <div class="view recueil">
+      <div class="recueil-image"><img src="mykeros-figure.jpg" alt=""></div>
       <div>
         <div class="greet">Bonjour ${escapeHtml(first)}</div>
         <div class="prompt display">Racontez votre rêve,<br>là, tout de suite.</div>
@@ -780,6 +786,7 @@ function render() {
   }
 }
 
+document.getElementById('footer-glyph').innerHTML = GLYPH(26);
 init();
 </script>
 </body>
