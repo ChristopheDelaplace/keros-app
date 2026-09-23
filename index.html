@@ -119,11 +119,12 @@
   }
 
   /* Recueil */
-  .recueil { justify-content: flex-start; align-items: center; text-align: center; padding-top: 20px; }
-  .recueil .mic-wrap { margin-top: 18px; }
-  .recueil .mic-bottom { margin-top: 26px; width: 100%; }
-  .recueil-image { width: 96px; height: 128px; margin: 4px auto 0; border-radius: 16px; overflow: hidden; background: var(--card-2); }
-  .recueil-image img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 22%; }
+  .recueil { justify-content: flex-start; align-items: center; text-align: center; padding-top: 8px; }
+  .recueil .mic-content { margin-top: 16px; }
+  .recueil .mic-wrap { margin-top: 24px; }
+  .recueil .mic-bottom { margin-top: 20px; width: 100%; }
+  .recueil-image { width: 220px; margin: 0 auto; }
+  .recueil-image img { width: 100%; height: auto; display: block; border-radius: 20px; }
   .greet { color: var(--ink-faint); font-size: 13px; margin-bottom: 2px; }
   .prompt { font-size: 21px; max-width: 280px; margin: 0 auto; }
   .mic-wrap { position: relative; width: 148px; height: 148px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
@@ -332,24 +333,26 @@ function renderRecueil() {
     ${topNav(true)}
     <div class="view recueil">
       <div class="recueil-image"><img src="mykeros-figure.jpg" alt=""></div>
-      <div>
-        <div class="greet">Bonjour ${escapeHtml(first)}</div>
-        <div class="prompt display">Racontez votre rêve,<br>là, tout de suite.</div>
-      </div>
-      <div class="mic-wrap">
-        <div class="mic-ring" id="ring1"></div>
-        <div class="mic-ring d2" id="ring2"></div>
-        <div class="mic-ring d3" id="ring3"></div>
-        <button class="mic-btn" id="mic-btn" aria-label="Démarrer l'enregistrement">
-          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
-        </button>
-      </div>
-      <div id="recit-area"></div>
-      <div class="mic-bottom">
-        <p class="mic-hint" id="mic-hint">Parlez comme si vous y étiez encore. On transcrit pendant que le rêve est frais.</p>
-        <button class="text-toggle" id="text-toggle" style="margin-top:14px;">Écrire plutôt</button>
-        <div class="footer-actions" id="recueil-actions" style="display:none;">
-          <button class="btn btn-primary btn-block" id="recueil-continue">Continuer →</button>
+      <div class="mic-content">
+        <div>
+          <div class="greet">${escapeHtml(first)}</div>
+          <div class="prompt display">Racontez votre rêve,<br>là, tout de suite.</div>
+        </div>
+        <div class="mic-wrap">
+          <div class="mic-ring" id="ring1"></div>
+          <div class="mic-ring d2" id="ring2"></div>
+          <div class="mic-ring d3" id="ring3"></div>
+          <button class="mic-btn" id="mic-btn" aria-label="Démarrer l'enregistrement">
+            <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+          </button>
+        </div>
+        <div id="recit-area"></div>
+        <div class="mic-bottom">
+          <p class="mic-hint" id="mic-hint">Parlez comme si vous y étiez encore. On transcrit pendant que le rêve est frais.</p>
+          <button class="text-toggle" id="text-toggle" style="margin-top:14px;">Écrire plutôt</button>
+          <div class="footer-actions" id="recueil-actions" style="display:none;">
+            <button class="btn btn-primary btn-block" id="recueil-continue">Continuer →</button>
+          </div>
         </div>
       </div>
     </div>
