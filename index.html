@@ -310,6 +310,10 @@ let recognition = null;
 let recognizing = false;
 
 function renderRecueil() {
+  if (recognition && recognizing) {
+    try { recognition.onend = null; recognition.stop(); } catch (e) {}
+  }
+  recognizing = false;
   const first = (state.profile?.email || '').split('@')[0];
   h(`
     ${topNav(true)}
