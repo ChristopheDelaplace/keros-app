@@ -85,10 +85,11 @@
   .auth-view { position: relative; }
   .auth-box { width: 100%; max-width: 320px; margin: 0 auto; display: flex; flex-direction: column; gap: 14px; }
   .auth-box h1 { font-size: 26px; }
-  .auth-image { width: 108px; height: 108px; margin: 0 auto; border-radius: 50%; overflow: hidden; background: var(--card-2); }
-  .auth-image img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 34%; }
-  .auth-glyph { display: flex; justify-content: center; color: var(--accent); margin-top: -4px; }
-  .auth-brand { position: absolute; left: 0; right: 0; bottom: 22px; text-align: center; font-family: 'Fraunces', Georgia, serif; font-size: 14px; font-weight: 500; letter-spacing: -0.01em; color: var(--ink-faint); }
+  .auth-view { justify-content: flex-start; padding-top: 40px; }
+  .auth-image { width: 112px; height: 148px; margin: 6px auto 0; border-radius: 18px; overflow: hidden; background: var(--card-2); }
+  .auth-image img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 22%; }
+  .auth-glyph { display: flex; justify-content: center; color: var(--accent); }
+  .auth-brand-top { text-align: center; font-family: 'Fraunces', Georgia, serif; font-size: 14px; font-weight: 500; letter-spacing: -0.01em; color: var(--ink-faint); }
   .field { display: flex; flex-direction: column; gap: 6px; text-align: left; }
   .field label { font-size: 11px; font-family: 'IBM Plex Mono', monospace; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-faint); }
   .field input, .field textarea {
@@ -257,10 +258,11 @@ function renderAuth() {
   h(`
     <div class="view center auth-view">
       <div class="auth-box">
-        <div class="auth-image"><img src="mykeros-figure.jpg" alt=""></div>
+        <div class="auth-brand-top">mykeros</div>
         <div class="auth-glyph">${GLYPH(24)}</div>
+        <div class="auth-image"><img src="mykeros-figure.jpg" alt=""></div>
         <h1>${isSignup ? 'Créer un compte' : 'Bon retour'}</h1>
-        <p style="color:var(--ink-soft);font-size:13px;margin:0 0 4px;">${isSignup ? 'Pour commencer à consigner vos rêves.' : 'Content de vous revoir.'}</p>
+        <p style="color:var(--ink-soft);font-size:13px;margin:0 0 4px;">${isSignup ? 'Pour commencer à consigner vos rêves' : 'Content de vous revoir'}</p>
         <div id="auth-msg"></div>
         <form id="auth-form" class="auth-box" style="gap:12px;">
           <div class="field"><label>Email</label><input type="email" id="auth-email" required autocomplete="email"></div>
@@ -269,7 +271,6 @@ function renderAuth() {
         </form>
         <button class="link-btn" id="auth-toggle">${isSignup ? 'Déjà un compte ? Se connecter' : "Pas de compte ? S'inscrire"}</button>
       </div>
-      <div class="auth-brand">mykeros</div>
     </div>
   `);
   $('#auth-toggle').onclick = () => { state.authMode = isSignup ? 'signin' : 'signup'; renderAuth(); };
