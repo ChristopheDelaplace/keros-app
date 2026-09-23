@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Kéros</title>
+<title>MyKéros</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400..600&family=Work+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
   :root {
@@ -250,7 +250,7 @@ async function loadProfileAndGo() {
 function renderAuth() {
   const isSignup = state.authMode === 'signup';
   h(`
-    <div class="statusbar"><span></span><span class="brand">${GLYPH(14)} KÉROS</span></div>
+    <div class="statusbar"><span></span><span class="brand">${GLYPH(14)} MYKÉROS</span></div>
     <div class="view center">
       <div class="auth-box">
         ${GLYPH(40)}
@@ -296,7 +296,7 @@ function renderAuth() {
 function topNav(showJournal) {
   return `<div class="topnav">
     <button class="journal-link" id="nav-journal">${showJournal ? 'Journal' : ''}</button>
-    <span class="brand">${GLYPH(14)} KÉROS</span>
+    <span class="brand">${GLYPH(14)} MYKÉROS</span>
     <button class="logout-link" id="nav-logout">Sortir</button>
   </div>`;
 }
@@ -394,7 +394,7 @@ function renderRecueil() {
         else interim += t;
       }
       const el = $('#recit-text');
-      if (el) { el.value = (finalTranscript + interim).trim(); updateContinueState(); }
+      if (el) { el.value = (finalTranscript + interim).trim(); updateContinueState(); el.scrollTop = el.scrollHeight; }
     };
     recognition.onerror = (e) => {
       const messages = {
