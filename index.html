@@ -121,7 +121,7 @@
   .mic-ring.pulse { animation: pulse 2.6s ease-out infinite; }
   .mic-ring.d2 { animation-delay: .9s; } .mic-ring.d3 { animation-delay: 1.8s; }
   @keyframes pulse { 0% { transform: scale(0.7); opacity: 0.5; } 100% { transform: scale(1.45); opacity: 0; } }
-  .mic-btn { width: 92px; height: 92px; border-radius: 50%; background: var(--accent); border: none; color: var(--card); display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 12px 24px -8px hsl(var(--shadow) / 0.4); }
+  .mic-btn { position: relative; z-index: 1; width: 92px; height: 92px; border-radius: 50%; background: var(--accent); border: none; color: var(--card); display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 12px 24px -8px hsl(var(--shadow) / 0.4); }
   .mic-btn.recording { background: var(--rose); }
   .mic-hint { font-size: 12px; color: var(--ink-faint); max-width: 240px; line-height: 1.5; margin: 0 auto; }
   .text-toggle { font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-soft); background: none; border: 1px solid var(--line); border-radius: 999px; padding: 8px 16px; cursor: pointer; }
