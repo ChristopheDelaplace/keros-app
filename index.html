@@ -1,0 +1,758 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Kéros</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400..600&family=Work+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    --ink: #211f33;
+    --ink-soft: #58547a;
+    --ink-faint: #8b87a8;
+    --ground: #f4f0e6;
+    --card: #fffdf8;
+    --card-2: #ece5d4;
+    --line: #ddd4bd;
+    --accent: #6f5fb8;
+    --accent-soft: #ebe6f7;
+    --amber: #c97f3a;
+    --amber-soft: #f6e6d3;
+    --rose: #b8636f;
+    --rose-soft: #f4e0e2;
+    --danger: #b8636f;
+    --shadow: 220 20% 15%;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ink: #f0ece0; --ink-soft: #c3bdd9; --ink-faint: #8a84a6;
+      --ground: #16142a; --card: #211f38; --card-2: #2a2745; --line: #3a3660;
+      --accent: #a596e6; --accent-soft: #322c56;
+      --amber: #e2a869; --amber-soft: #3a2f26;
+      --rose: #dd97a1; --rose-soft: #3a2530;
+      color-scheme: dark;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: 'Work Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100%;
+  }
+  h1, h2, h3, .display { font-family: 'Fraunces', Georgia, serif; font-weight: 500; text-wrap: balance; letter-spacing: -0.01em; margin: 0; }
+
+  .frame {
+    width: 100%;
+    max-width: 440px;
+    min-height: 100dvh;
+    background: var(--card);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+  @media (min-width: 480px) {
+    body { padding-block: 32px; }
+    .frame { min-height: 760px; height: 760px; border: 1px solid var(--line); border-radius: 34px; overflow: hidden; box-shadow: 0 30px 60px -20px hsl(var(--shadow) / 0.35), 0 2px 8px hsl(var(--shadow) / 0.15); }
+  }
+
+  .statusbar {
+    padding: 18px 22px 6px;
+    display: flex; justify-content: space-between; align-items: center;
+    font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--ink-faint);
+    position: relative; z-index: 1;
+  }
+  .brand { display: flex; align-items: center; gap: 6px; }
+  .glyph-icon { display: inline-flex; flex-shrink: 0; }
+
+  .view { flex: 1; display: flex; flex-direction: column; overflow-y: auto; padding: 4px 22px 26px; position: relative; z-index: 1; }
+  .view.center { justify-content: center; align-items: center; text-align: center; }
+
+  /* Auth */
+  .auth-box { width: 100%; max-width: 320px; margin: 0 auto; display: flex; flex-direction: column; gap: 14px; }
+  .auth-box h1 { font-size: 26px; }
+  .field { display: flex; flex-direction: column; gap: 6px; text-align: left; }
+  .field label { font-size: 11px; font-family: 'IBM Plex Mono', monospace; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-faint); }
+  .field input, .field textarea {
+    border: 1px solid var(--line); border-radius: 10px; background: var(--card);
+    color: var(--ink); padding: 11px 12px; font-family: 'Work Sans', sans-serif; font-size: 14px;
+  }
+  .btn {
+    border: none; border-radius: 999px; padding: 12px 18px; font-weight: 600; font-size: 14px;
+    cursor: pointer; font-family: 'Work Sans', sans-serif; transition: opacity .15s;
+  }
+  .btn:disabled { opacity: 0.5; cursor: default; }
+  .btn-primary { background: var(--accent); color: var(--card); }
+  .btn-ghost { background: none; border: 1px solid var(--line); color: var(--ink-soft); }
+  .btn-block { width: 100%; }
+  .link-btn { background: none; border: none; color: var(--accent); font-size: 13px; cursor: pointer; font-family: 'Work Sans', sans-serif; }
+  .msg { font-size: 12.5px; padding: 10px 12px; border-radius: 10px; text-align: left; }
+  .msg.error { background: var(--rose-soft); color: var(--rose); }
+  .msg.ok { background: var(--accent-soft); color: var(--accent); }
+
+  /* Nav */
+  .topnav { display: flex; justify-content: space-between; align-items: center; padding: 14px 22px 0; position: relative; z-index: 1; }
+  .topnav .journal-link, .topnav .logout-link {
+    font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase;
+    color: var(--ink-soft); background: none; border: none; cursor: pointer; padding: 4px;
+  }
+
+  /* Recueil */
+  .recueil { justify-content: flex-start; align-items: center; text-align: center; padding-top: 24px; }
+  .recueil .mic-wrap { margin-top: 22px; }
+  .recueil .mic-bottom { margin-top: auto; width: 100%; }
+  .greet { color: var(--ink-faint); font-size: 13px; margin-bottom: 2px; }
+  .prompt { font-size: 21px; max-width: 280px; margin: 0 auto; }
+  .mic-wrap { position: relative; width: 148px; height: 148px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .mic-ring { position: absolute; inset: 0; border-radius: 50%; border: 1px solid var(--accent); opacity: 0.35; }
+  .mic-ring.pulse { animation: pulse 2.6s ease-out infinite; }
+  .mic-ring.d2 { animation-delay: .9s; } .mic-ring.d3 { animation-delay: 1.8s; }
+  @keyframes pulse { 0% { transform: scale(0.7); opacity: 0.5; } 100% { transform: scale(1.45); opacity: 0; } }
+  .mic-btn { width: 92px; height: 92px; border-radius: 50%; background: var(--accent); border: none; color: var(--card); display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 12px 24px -8px hsl(var(--shadow) / 0.4); }
+  .mic-btn.recording { background: var(--rose); }
+  .mic-hint { font-size: 12px; color: var(--ink-faint); max-width: 240px; line-height: 1.5; margin: 0 auto; }
+  .text-toggle { font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-soft); background: none; border: 1px solid var(--line); border-radius: 999px; padding: 8px 16px; cursor: pointer; }
+  .recit-preview { width: 100%; text-align: left; background: var(--card-2); border-radius: 12px; padding: 12px; font-size: 13.5px; line-height: 1.5; max-height: 160px; overflow-y: auto; margin-top: 14px; }
+  .recit-textarea { width: 100%; min-height: 140px; margin-top: 14px; }
+
+  .mic-bg { position: absolute; left: 0; right: 0; top: 118px; height: 300px; pointer-events: none; z-index: 0; overflow: hidden; }
+  .mic-bg img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 50%; filter: grayscale(1) contrast(1.15) brightness(1.08); opacity: 0.4; -webkit-mask-image: linear-gradient(180deg, black 0%, black 88%, transparent 100%); mask-image: linear-gradient(180deg, black 0%, black 88%, transparent 100%); }
+  :root:not([data-theme="light"]) .mic-bg img, :root[data-theme="dark"] .mic-bg img { filter: grayscale(1) contrast(1.05) brightness(0.68); opacity: 0.45; }
+
+  /* Step card (sentiment/nom/contexte/associations) */
+  .step-title { font-size: 22px; margin-bottom: 18px; text-align: center; }
+  .step-card { background: var(--accent-soft); border: 1px solid var(--accent); border-radius: 16px; padding: 16px; margin-top: 8px; }
+  .step-card .k-label { font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent); }
+  .step-card .k-word { font-family: 'Fraunces', serif; font-size: 19px; margin: 4px 0 12px; }
+  .step-card .a-label { font-size: 11px; font-weight: 600; color: var(--ink-soft); margin-bottom: 6px; }
+  .kw-input { width: 100%; border: 1px solid var(--line); border-radius: 10px; background: var(--card); color: var(--ink); padding: 10px 12px; font-family: 'Work Sans', sans-serif; font-size: 13.5px; min-height: 64px; resize: none; line-height: 1.4; }
+  .kw-meta { display: flex; justify-content: space-between; margin-top: 8px; font-size: 10.5px; color: var(--ink-faint); font-family: 'IBM Plex Mono', monospace; }
+  .kw-next { margin-top: 12px; width: 100%; padding: 11px; border: none; border-radius: 10px; background: var(--ink); color: var(--card); font-weight: 600; font-size: 13px; cursor: pointer; }
+  .kw-next:disabled { opacity: 0.4; }
+
+  .progress-row { display: flex; align-items: center; justify-content: flex-end; padding: 6px 0 14px; }
+  .progress-dots { display: flex; gap: 5px; }
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--line); }
+  .dot.done { background: var(--accent); } .dot.now { background: var(--amber); }
+  .kw-history { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+  .kw-row { display: grid; grid-template-columns: 108px 1fr; gap: 10px; padding: 10px 12px; background: var(--card-2); border-radius: 12px; font-size: 12.5px; opacity: 0.72; }
+  .kw-row .k { font-weight: 600; color: var(--ink); } .kw-row .a { color: var(--ink-soft); }
+
+  .kw-bg { position: absolute; left: 50%; top: 380px; width: 170px; height: 170px; transform: translate(-50%, -50%); pointer-events: none; z-index: 0; }
+  .kw-bg svg { width: 100%; height: 100%; opacity: 0.05; }
+  :root:not([data-theme="light"]) .kw-bg svg, :root[data-theme="dark"] .kw-bg svg { opacity: 0.08; }
+
+  /* Restitution */
+  .rest-header { padding-top: 6px; margin-bottom: 4px; text-align: center; }
+  .rest-tag { display: inline-flex; gap: 6px; align-items: center; font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; color: var(--rose); background: var(--rose-soft); padding: 4px 10px; border-radius: 999px; margin-bottom: 18px; }
+  .rest-title { font-size: 25px; margin-bottom: 10px; }
+  .rest-block { margin-bottom: 18px; }
+  .rest-block h3 { font-size: 11px; font-family: 'Work Sans', sans-serif; font-weight: 700; margin: 0 0 6px; color: var(--ink-soft); text-transform: uppercase; letter-spacing: 0.05em; }
+  .rest-block p { font-size: 14px; line-height: 1.6; margin: 0; color: var(--ink); }
+  .motif-card { background: var(--amber-soft); border: 1px solid var(--amber); border-radius: 14px; padding: 14px; display: flex; gap: 12px; align-items: flex-start; margin-bottom: 18px; }
+  .motif-card .t { font-size: 12.5px; line-height: 1.5; color: var(--ink); }
+  .premium-cta { margin-top: auto; border-top: 1px solid var(--line); padding-top: 14px; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .premium-cta .txt { font-size: 12px; color: var(--ink-soft); max-width: 190px; line-height: 1.4; }
+  .loading-block { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; flex: 1; text-align: center; color: var(--ink-soft); font-size: 13.5px; }
+  .spinner { width: 28px; height: 28px; border-radius: 50%; border: 2px solid var(--line); border-top-color: var(--accent); animation: spin .8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Journal */
+  .journal-title { font-size: 22px; margin-bottom: 16px; }
+  .journal-list { display: flex; flex-direction: column; gap: 10px; }
+  .journal-row { display: flex; align-items: center; gap: 12px; background: var(--card-2); border-radius: 12px; padding: 12px 14px; cursor: pointer; text-align: left; border: none; width: 100%; font-family: inherit; color: var(--ink); }
+  .journal-row .num { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--ink-faint); flex-shrink: 0; width: 32px; }
+  .journal-row .meta { flex: 1; min-width: 0; }
+  .journal-row .name { font-family: 'Fraunces', serif; font-size: 15px; }
+  .journal-row .date { font-size: 11px; color: var(--ink-faint); margin-top: 2px; }
+  .journal-empty { color: var(--ink-faint); font-size: 13.5px; text-align: center; margin-top: 40px; }
+  .fab { position: fixed; bottom: 24px; right: 24px; z-index: 5; }
+
+  .footer-actions { display: flex; gap: 10px; margin-top: 16px; }
+  .footer-actions .btn { flex: 1; }
+</style>
+</head>
+<body>
+<div class="frame" id="frame">
+  <div id="app-root"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script>
+const SUPABASE_URL = "https://lyeoanwpxjbuhnwoceeb.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx5ZW9hbndweGpidWhud29jZWViIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAwODgzMDcsImV4cCI6MjEwNTY2NDMwN30.D4mVV081nDWRx-By0y7HjQsY5UpSSkwz0nzzw9uTnQU";
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+const GLYPH = (size, opacity) => `<svg class="glyph-icon" width="${size}" height="${size}" viewBox="0 0 100 100" fill="none" style="opacity:${opacity ?? 1}"><path d="M 42 14 L 42 58 L 20 58" stroke="currentColor" stroke-width="7" stroke-linecap="square" stroke-linejoin="miter" fill="none"/><path d="M 58 14 L 58 58 L 80 58" stroke="currentColor" stroke-width="7" stroke-linecap="square" stroke-linejoin="miter" fill="none"/></svg>`;
+
+let state = {
+  session: null,
+  profile: null,
+  view: 'loading',
+  authMode: 'signin',
+  reve: null,       // in-progress reve row
+  recit: '',
+  keywords: [],     // [{texte, categorie, association}]
+  kwIndex: 0,
+  journal: [],
+};
+
+const root = document.getElementById('app-root');
+function h(html) { root.innerHTML = html; }
+function $(sel) { return root.querySelector(sel); }
+
+function escapeHtml(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function fmtDate(d) {
+  const dt = new Date(d);
+  return dt.toLocaleDateString('fr-CH', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+// ---------- AUTH ----------
+async function init() {
+  const { data } = await sb.auth.getSession();
+  state.session = data.session;
+  sb.auth.onAuthStateChange((_event, session) => {
+    state.session = session;
+    if (session) { loadProfileAndGo(); } else { state.view = 'auth'; render(); }
+  });
+  if (state.session) { await loadProfileAndGo(); } else { state.view = 'auth'; render(); }
+}
+
+async function loadProfileAndGo() {
+  const uid = state.session.user.id;
+  let { data: profile } = await sb.from('profiles').select('*').eq('id', uid).maybeSingle();
+  if (!profile) {
+    // trigger may not have fired yet (rare race) — retry once shortly
+    await new Promise(r => setTimeout(r, 800));
+    ({ data: profile } = await sb.from('profiles').select('*').eq('id', uid).maybeSingle());
+  }
+  state.profile = profile;
+  state.view = 'recueil';
+  render();
+}
+
+function renderAuth() {
+  const isSignup = state.authMode === 'signup';
+  h(`
+    <div class="statusbar"><span></span><span class="brand">${GLYPH(14)} KÉROS</span></div>
+    <div class="view center">
+      <div class="auth-box">
+        ${GLYPH(40)}
+        <h1>${isSignup ? 'Créer un compte' : 'Bon retour'}</h1>
+        <p style="color:var(--ink-soft);font-size:13px;margin:0 0 4px;">${isSignup ? 'Pour commencer à consigner vos rêves.' : 'Content de vous revoir.'}</p>
+        <div id="auth-msg"></div>
+        <form id="auth-form" class="auth-box" style="gap:12px;">
+          <div class="field"><label>Email</label><input type="email" id="auth-email" required autocomplete="email"></div>
+          <div class="field"><label>Mot de passe</label><input type="password" id="auth-password" required minlength="6" autocomplete="${isSignup ? 'new-password' : 'current-password'}"></div>
+          <button type="submit" class="btn btn-primary btn-block" id="auth-submit">${isSignup ? "S'inscrire" : "Se connecter"}</button>
+        </form>
+        <button class="link-btn" id="auth-toggle">${isSignup ? 'Déjà un compte ? Se connecter' : "Pas de compte ? S'inscrire"}</button>
+      </div>
+    </div>
+  `);
+  $('#auth-toggle').onclick = () => { state.authMode = isSignup ? 'signin' : 'signup'; renderAuth(); };
+  $('#auth-form').onsubmit = async (e) => {
+    e.preventDefault();
+    const email = $('#auth-email').value.trim();
+    const password = $('#auth-password').value;
+    const btn = $('#auth-submit');
+    btn.disabled = true;
+    const msgEl = $('#auth-msg');
+    msgEl.innerHTML = '';
+    try {
+      if (isSignup) {
+        const { error } = await sb.auth.signUp({ email, password });
+        if (error) throw error;
+        msgEl.innerHTML = `<div class="msg ok">Compte créé. Si la confirmation par email est activée, vérifiez votre boîte avant de vous connecter.</div>`;
+        state.authMode = 'signin';
+      } else {
+        const { error } = await sb.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+      }
+    } catch (err) {
+      msgEl.innerHTML = `<div class="msg error">${escapeHtml(err.message || String(err))}</div>`;
+    } finally {
+      btn.disabled = false;
+    }
+  };
+}
+
+function topNav(showJournal) {
+  return `<div class="topnav">
+    <button class="journal-link" id="nav-journal">${showJournal ? 'Journal' : ''}</button>
+    <span class="brand">${GLYPH(14)} KÉROS</span>
+    <button class="logout-link" id="nav-logout">Sortir</button>
+  </div>`;
+}
+function bindTopNav() {
+  const j = $('#nav-journal'); if (j) j.onclick = goJournal;
+  const l = $('#nav-logout'); if (l) l.onclick = async () => { await sb.auth.signOut(); };
+}
+
+// ---------- RECUEIL ----------
+let recognition = null;
+let recognizing = false;
+
+function renderRecueil() {
+  const first = (state.profile?.email || '').split('@')[0];
+  h(`
+    ${topNav(true)}
+    <div class="mic-bg"><img src="keros-figure.jpg" alt=""></div>
+    <div class="view recueil">
+      <div>
+        <div class="greet">Bonjour ${escapeHtml(first)}</div>
+        <div class="prompt display">Racontez votre rêve,<br>là, tout de suite.</div>
+      </div>
+      <div class="mic-wrap">
+        <div class="mic-ring" id="ring1"></div>
+        <div class="mic-ring d2" id="ring2"></div>
+        <div class="mic-ring d3" id="ring3"></div>
+        <button class="mic-btn" id="mic-btn" aria-label="Démarrer l'enregistrement">
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+        </button>
+      </div>
+      <div id="recit-area"></div>
+      <div class="mic-bottom">
+        <p class="mic-hint" id="mic-hint">Parlez comme si vous y étiez encore. On transcrit pendant que le rêve est frais.</p>
+        <button class="text-toggle" id="text-toggle" style="margin-top:14px;">Écrire plutôt</button>
+        <div class="footer-actions" id="recueil-actions" style="display:none;">
+          <button class="btn btn-primary btn-block" id="recueil-continue">Continuer →</button>
+        </div>
+      </div>
+    </div>
+  `);
+  bindTopNav();
+
+  const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const recitArea = $('#recit-area');
+  const actions = $('#recueil-actions');
+  const micHint = $('#mic-hint');
+
+  function showTextArea(prefill) {
+    recitArea.innerHTML = `<textarea class="kw-input recit-textarea" id="recit-text" placeholder="Racontez ce dont vous vous souvenez…">${escapeHtml(prefill || '')}</textarea>`;
+    $('#recit-text').addEventListener('input', updateContinueState);
+    updateContinueState();
+  }
+  function updateContinueState() {
+    const el = $('#recit-text');
+    const val = el ? el.value.trim() : '';
+    actions.style.display = val ? 'flex' : 'none';
+    state.recit = val;
+  }
+
+  $('#text-toggle').onclick = () => {
+    showTextArea(state.recit);
+    $('#recit-text').focus();
+  };
+
+  $('#mic-btn').onclick = () => {
+    if (!SpeechRec) {
+      micHint.textContent = "La dictée vocale n'est pas disponible sur ce navigateur — utilisez « Écrire plutôt ».";
+      return;
+    }
+    if (recognizing) {
+      recognition.stop();
+      return;
+    }
+    recognition = new SpeechRec();
+    recognition.lang = 'fr-FR';
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    let finalTranscript = state.recit || '';
+    showTextArea(finalTranscript);
+    recognition.onstart = () => {
+      recognizing = true;
+      $('#mic-btn').classList.add('recording');
+      micHint.textContent = 'Je vous écoute…';
+    };
+    recognition.onresult = (event) => {
+      let interim = '';
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const t = event.results[i][0].transcript;
+        if (event.results[i].isFinal) finalTranscript += t + ' ';
+        else interim += t;
+      }
+      const el = $('#recit-text');
+      if (el) { el.value = (finalTranscript + interim).trim(); updateContinueState(); }
+    };
+    recognition.onerror = () => { micHint.textContent = "Problème de dictée — vous pouvez écrire directement."; };
+    recognition.onend = () => {
+      recognizing = false;
+      $('#mic-btn').classList.remove('recording');
+      micHint.textContent = 'Parlez comme si vous y étiez encore. On transcrit pendant que le rêve est frais.';
+    };
+    recognition.start();
+  };
+
+  $('#recueil-continue').onclick = async () => {
+    if (!state.recit) return;
+    const btn = $('#recueil-continue');
+    btn.disabled = true; btn.textContent = 'Un instant…';
+    try {
+      const { data: reve, error } = await sb.from('reves').insert({
+        user_id: state.session.user.id,
+        transcription: state.recit,
+      }).select().single();
+      if (error) throw error;
+      state.reve = reve;
+      state.keywords = [];
+      state.kwIndex = 0;
+      state.view = 'sentiment';
+      render();
+    } catch (err) {
+      alert("Erreur à l'enregistrement du rêve : " + (err.message || err));
+      btn.disabled = false; btn.textContent = 'Continuer →';
+    }
+  };
+}
+
+// ---------- SENTIMENT + NOM ----------
+function renderSentiment() {
+  h(`
+    ${topNav(true)}
+    <div class="view">
+      <div class="step-title">Un mot pour ce que ça vous a fait</div>
+      <div class="step-card">
+        <div class="a-label">Sentiment associé au rêve</div>
+        <input class="kw-input" style="min-height:auto;" id="sentiment-input" placeholder="ex. confusion, étonnement…">
+        <button class="kw-next" id="sentiment-next">Continuer →</button>
+      </div>
+    </div>
+  `);
+  bindTopNav();
+  const input = $('#sentiment-input');
+  const btn = $('#sentiment-next');
+  input.oninput = () => { btn.disabled = !input.value.trim(); };
+  btn.disabled = true;
+  btn.onclick = async () => {
+    btn.disabled = true;
+    const { data, error } = await sb.from('reves').update({ sentiment: input.value.trim() }).eq('id', state.reve.id).select().single();
+    if (!error) state.reve = data;
+    state.view = 'nom';
+    render();
+  };
+}
+
+function renderNom() {
+  h(`
+    ${topNav(true)}
+    <div class="view">
+      <div class="step-title">Donnez un nom à ce rêve</div>
+      <div class="step-card">
+        <div class="a-label">Comme un titre, pour vous y retrouver</div>
+        <input class="kw-input" style="min-height:auto;" id="nom-input" placeholder="ex. Le Board / ComEx">
+        <button class="kw-next" id="nom-next">Continuer →</button>
+      </div>
+    </div>
+  `);
+  bindTopNav();
+  const input = $('#nom-input');
+  const btn = $('#nom-next');
+  input.oninput = () => { btn.disabled = !input.value.trim(); };
+  btn.disabled = true;
+  btn.onclick = async () => {
+    btn.disabled = true;
+    btn.textContent = 'Un instant…';
+    const { data, error } = await sb.from('reves').update({ nom: input.value.trim() }).eq('id', state.reve.id).select().single();
+    if (!error) state.reve = data;
+    await startAssociations();
+  };
+}
+
+// ---------- ASSOCIATIONS ----------
+async function startAssociations() {
+  state.view = 'extracting';
+  render();
+  try {
+    const { data, error } = await sb.functions.invoke('extract-keywords', {
+      body: { recit: state.reve.transcription },
+    });
+    if (error) throw error;
+    const mots = (data && data.mots_cles) || [];
+    state.keywords = mots.map(m => ({ texte: m.texte, categorie: m.categorie, association: '' }));
+    if (state.keywords.length === 0) {
+      state.keywords = [{ texte: 'Un élément marquant', categorie: 'action', association: '' }];
+    }
+    state.kwIndex = 0;
+    state.view = 'associations';
+    render();
+  } catch (err) {
+    state.view = 'extract-error';
+    render();
+  }
+}
+
+function renderExtracting() {
+  h(`
+    ${topNav(true)}
+    <div class="loading-block">
+      ${GLYPH(28)}
+      <div class="spinner"></div>
+      <div>On relit votre rêve pour en dégager les mots-clés…</div>
+    </div>
+  `);
+  bindTopNav();
+}
+
+function renderExtractError() {
+  h(`
+    ${topNav(true)}
+    <div class="loading-block">
+      <div class="msg error">L'extraction des mots-clés a échoué. Réessayer ?</div>
+      <button class="btn btn-primary" id="retry-extract">Réessayer</button>
+    </div>
+  `);
+  bindTopNav();
+  $('#retry-extract').onclick = startAssociations;
+}
+
+function renderAssociations() {
+  const total = state.keywords.length;
+  const idx = state.kwIndex;
+  const current = state.keywords[idx];
+  const history = state.keywords.slice(0, idx);
+  const dots = state.keywords.map((_, i) => `<span class="dot ${i < idx ? 'done' : i === idx ? 'now' : ''}"></span>`).join('');
+  h(`
+    ${topNav(true)}
+    <div class="kw-bg">${GLYPH(170, 1).replace('width="170" height="170"', 'width="100%" height="100%"')}</div>
+    <div class="view">
+      <div class="progress-row"><div class="progress-dots">${dots}</div></div>
+      <div class="step-title">Associations</div>
+      <div class="kw-history">
+        ${history.map(k => `<div class="kw-row"><span class="k">${escapeHtml(k.texte)}</span><span class="a">${escapeHtml(k.association)}</span></div>`).join('')}
+      </div>
+      <div class="step-card" style="margin-top:auto;">
+        <div class="k-label">Mot-clé ${idx + 1} sur ${total}</div>
+        <div class="k-word">${escapeHtml(current.texte)}</div>
+        <div class="a-label">Ça vous fait penser à quoi ?</div>
+        <textarea class="kw-input" id="kw-answer" maxlength="120" placeholder="Ce qui vient, sans réfléchir…"></textarea>
+        <div class="kw-meta"><span>120 caractères max</span><span id="kw-count">0 / 120</span></div>
+        <button class="kw-next" id="kw-next" disabled>${idx === total - 1 ? 'Continuer →' : 'Mot-clé suivant →'}</button>
+      </div>
+    </div>
+  `);
+  bindTopNav();
+  const ta = $('#kw-answer');
+  const counter = $('#kw-count');
+  const next = $('#kw-next');
+  ta.oninput = () => {
+    counter.textContent = `${ta.value.length} / 120`;
+    next.disabled = !ta.value.trim();
+  };
+  next.onclick = async () => {
+    current.association = ta.value.trim();
+    next.disabled = true;
+    if (idx < total - 1) {
+      state.kwIndex++;
+      renderAssociations();
+    } else {
+      // persist keywords + associations
+      try {
+        for (let i = 0; i < state.keywords.length; i++) {
+          const kw = state.keywords[i];
+          const { data: kwRow, error: kwErr } = await sb.from('mots_cles').insert({
+            reve_id: state.reve.id, texte: kw.texte, categorie: kw.categorie, ordre: i,
+          }).select().single();
+          if (kwErr) throw kwErr;
+          const { error: assocErr } = await sb.from('associations').insert({
+            mot_cle_id: kwRow.id, texte: kw.association,
+          });
+          if (assocErr) throw assocErr;
+        }
+      } catch (err) {
+        alert('Erreur en enregistrant les associations : ' + (err.message || err));
+      }
+      state.view = 'contexte';
+      render();
+    }
+  };
+}
+
+// ---------- CONTEXTE ----------
+function renderContexte() {
+  h(`
+    ${topNav(true)}
+    <div class="view">
+      <div class="step-title">Un dernier point</div>
+      <div class="step-card">
+        <div class="a-label">Quelque chose de notable ces dernières 24h, ou à venir dans les 72h ?</div>
+        <textarea class="kw-input" id="contexte-input" placeholder="Rien de notable, ou bien…"></textarea>
+        <button class="kw-next" id="contexte-next">Voir la restitution →</button>
+      </div>
+    </div>
+  `);
+  bindTopNav();
+  $('#contexte-next').onclick = async () => {
+    const btn = $('#contexte-next');
+    btn.disabled = true; btn.textContent = 'On y réfléchit…';
+    const contexte = $('#contexte-input').value.trim();
+    await sb.from('reves').update({ contexte }).eq('id', state.reve.id);
+    await runRestitution(contexte);
+  };
+}
+
+// ---------- RESTITUTION ----------
+async function runRestitution(contexte) {
+  state.view = 'restituting';
+  render();
+  try {
+    const { data, error } = await sb.functions.invoke('restitution', {
+      body: {
+        recit: state.reve.transcription,
+        sentiment: state.reve.sentiment,
+        nom: state.reve.nom,
+        mots_cles: state.keywords,
+        contexte: contexte,
+        niveau: (state.profile && state.profile.tier) || 'standard',
+      },
+    });
+    if (error) throw error;
+    await sb.from('reves').update({ restitution: data }).eq('id', state.reve.id);
+    state.reve.restitution = data;
+    state.view = 'restitution';
+    render();
+  } catch (err) {
+    state.view = 'restitution-error';
+    render();
+  }
+}
+
+function renderRestituting() {
+  h(`
+    ${topNav(true)}
+    <div class="loading-block">
+      ${GLYPH(28)}
+      <div class="spinner"></div>
+      <div>Kéros prend le temps de relier les fils…</div>
+    </div>
+  `);
+  bindTopNav();
+}
+
+function renderRestitutionError() {
+  h(`
+    ${topNav(true)}
+    <div class="loading-block">
+      <div class="msg error">La restitution a échoué. Réessayer ?</div>
+      <button class="btn btn-primary" id="retry-rest">Réessayer</button>
+    </div>
+  `);
+  bindTopNav();
+  $('#retry-rest').onclick = () => runRestitution(state.reve.contexte);
+}
+
+function renderRestitution(reve) {
+  const r = reve.restitution || { sections: [], motif_recurrent: { present: false } };
+  const isStandard = (state.profile && state.profile.tier) !== 'premium';
+  h(`
+    ${topNav(true)}
+    <div class="view">
+      <div class="rest-header">
+        <h2 class="rest-title display">${escapeHtml(reve.nom || 'Sans titre')}</h2>
+        <span class="rest-tag">◐ ${escapeHtml(reve.sentiment || '')}</span>
+      </div>
+      ${r.motif_recurrent && r.motif_recurrent.present ? `
+        <div class="motif-card"><span class="t">${escapeHtml(r.motif_recurrent.texte)}</span></div>
+      ` : ''}
+      ${(r.sections || []).map(s => `
+        <div class="rest-block"><h3>${escapeHtml(s.titre)}</h3><p>${escapeHtml(s.texte)}</p></div>
+      `).join('')}
+      ${isStandard ? `
+        <div class="premium-cta">
+          <span class="txt">Passer en Premium pour nommer ces figures et approfondir la lecture.</span>
+          <button class="btn btn-primary" id="premium-btn">Bientôt</button>
+        </div>
+      ` : ''}
+      <div class="footer-actions">
+        <button class="btn btn-ghost btn-block" id="new-dream">Nouveau rêve</button>
+      </div>
+    </div>
+  `);
+  bindTopNav();
+  $('#new-dream').onclick = () => { state.view = 'recueil'; state.recit = ''; state.reve = null; render(); };
+  const pb = $('#premium-btn'); if (pb) pb.onclick = () => alert('Le paiement Premium arrive bientôt.');
+}
+
+// ---------- JOURNAL ----------
+async function goJournal() {
+  state.view = 'journal-loading';
+  render();
+  const { data, error } = await sb.from('reves').select('*').eq('user_id', state.session.user.id).order('numero', { ascending: false });
+  state.journal = error ? [] : data;
+  state.view = 'journal';
+  render();
+}
+
+function renderJournalLoading() {
+  h(`${topNav(false)}<div class="loading-block">${GLYPH(28)}<div class="spinner"></div></div>`);
+  bindTopNav();
+}
+
+function renderJournal() {
+  h(`
+    ${topNav(false)}
+    <div class="view">
+      <div class="journal-title display">Journal</div>
+      ${state.journal.length === 0 ? `<div class="journal-empty">Aucun rêve consigné pour l'instant.</div>` : `
+        <div class="journal-list">
+          ${state.journal.map(r => `
+            <button class="journal-row" data-id="${r.id}">
+              <span class="num">#${r.numero}</span>
+              <span class="meta">
+                <div class="name">${escapeHtml(r.nom || 'Sans titre')}</div>
+                <div class="date">${fmtDate(r.date)}${r.sentiment ? ' · ' + escapeHtml(r.sentiment) : ''}</div>
+              </span>
+            </button>
+          `).join('')}
+        </div>
+      `}
+      <div class="footer-actions">
+        <button class="btn btn-primary btn-block" id="journal-new">Raconter un nouveau rêve</button>
+      </div>
+    </div>
+  `);
+  bindTopNav();
+  $('#journal-new').onclick = () => { state.view = 'recueil'; state.recit = ''; state.reve = null; render(); };
+  root.querySelectorAll('.journal-row').forEach(btn => {
+    btn.onclick = () => {
+      const reve = state.journal.find(r => r.id === btn.dataset.id);
+      state.reve = reve;
+      state.view = 'restitution';
+      render();
+    };
+  });
+}
+
+// ---------- RENDER DISPATCH ----------
+function render() {
+  switch (state.view) {
+    case 'auth': return renderAuth();
+    case 'recueil': return renderRecueil();
+    case 'sentiment': return renderSentiment();
+    case 'nom': return renderNom();
+    case 'extracting': return renderExtracting();
+    case 'extract-error': return renderExtractError();
+    case 'associations': return renderAssociations();
+    case 'contexte': return renderContexte();
+    case 'restituting': return renderRestituting();
+    case 'restitution-error': return renderRestitutionError();
+    case 'restitution': return renderRestitution(state.reve);
+    case 'journal-loading': return renderJournalLoading();
+    case 'journal': return renderJournal();
+    default: h(`<div class="view center">${GLYPH(28)}</div>`);
+  }
+}
+
+init();
+</script>
+</body>
+</html>
