@@ -89,6 +89,8 @@
   .auth-image img { width: 100%; height: auto; display: block; }
   #auth-form { margin-top: 44px; }
   #auth-toggle { margin-top: 6px; }
+  .view.rest-view { padding-top: 57px; }
+  .view.rest-view .rest-header { margin-top: 20px; }
   .field { display: flex; flex-direction: column; gap: 6px; text-align: left; }
   .field label { font-size: 11px; font-family: 'IBM Plex Mono', monospace; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-faint); }
   .field input, .field textarea {
@@ -307,12 +309,15 @@ function renderAuth() {
   };
 }
 
+const ICON_JOURNAL = `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>`;
+const ICON_LOGOUT = `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>`;
+
 function topNav(showJournal, showLogout) {
   if (showLogout === undefined) showLogout = true;
   return `<div class="topnav">
-    <button class="journal-link" id="nav-journal">${showJournal ? 'Journal' : ''}</button>
+    <button class="journal-link" id="nav-journal" aria-label="Journal">${showJournal ? ICON_JOURNAL : ''}</button>
     <span class="brand">mykeros</span>
-    <button class="logout-link" id="nav-logout">${showLogout ? 'Sortir' : ''}</button>
+    <button class="logout-link" id="nav-logout" aria-label="Sortir">${showLogout ? ICON_LOGOUT : ''}</button>
   </div>`;
 }
 function bindTopNav() {
@@ -694,7 +699,8 @@ function renderRestitution(reve) {
   const isStandard = (state.profile && state.profile.tier) !== 'premium';
   h(`
     ${topNav(true)}
-    <div class="view">
+    <div class="view rest-view">
+      <div class="auth-image"><img src="mykeros-figure-cutout.png" alt=""></div>
       <div class="rest-header">
         <h2 class="rest-title display">${escapeHtml(reve.nom || 'Sans titre')}</h2>
         <span class="rest-tag">◐ ${escapeHtml(reve.sentiment || '')}</span>
