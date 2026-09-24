@@ -150,6 +150,14 @@
   .step-card .k-label { font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent); }
   .step-card .k-word { font-family: 'Fraunces', serif; font-size: 19px; margin: 4px 0 12px; }
   .step-card .a-label { font-size: 11px; font-weight: 600; color: var(--ink-soft); margin-bottom: 6px; }
+  .chip-grid { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 16px; }
+  .chip { font-family: 'Work Sans', sans-serif; font-size: 13px; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--card); color: var(--ink); cursor: pointer; transition: opacity .15s; }
+  .chip.selected { background: var(--accent); border-color: var(--accent); color: var(--card); }
+  .chip:disabled { opacity: 0.35; cursor: default; }
+  .chip-pairs { display: flex; flex-direction: column; gap: 8px; margin: 4px 0 16px; }
+  .chip-pair-row { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; }
+  .chip-pair-row .chip { width: 100%; }
+  .chip-pair-sep { color: var(--ink-faint); font-size: 12px; }
   .kw-input { width: 100%; border: 1px solid var(--line); border-radius: 10px; background: var(--card); color: var(--ink); padding: 10px 12px; font-family: 'Work Sans', sans-serif; font-size: 13.5px; min-height: 64px; resize: none; line-height: 1.4; }
   .kw-meta { display: flex; justify-content: space-between; margin-top: 8px; font-size: 10.5px; color: var(--ink-faint); font-family: 'IBM Plex Mono', monospace; }
   .kw-next { margin-top: 12px; width: 100%; padding: 11px; border: none; border-radius: 10px; background: var(--ink); color: var(--card); font-weight: 600; font-size: 13px; cursor: pointer; }
@@ -460,26 +468,59 @@ function renderRecueil() {
 }
 
 // ---------- SENTIMENT + NOM ----------
+// Roue des émotions de Plutchik : 4 paires d'opposés
+const SENTIMENT_PAIRS = [
+  ['Joie', 'Tristesse'],
+  ['Confiance', 'Dégoût'],
+  ['Peur', 'Colère'],
+  ['Surprise', 'Anticipation'],
+];
+
 function renderSentiment() {
+  const selected = [];
   h(`
     ${topNav(true)}
     <div class="view">
-      <div class="step-title">Un mot pour ce que ça vous a fait</div>
+      <div class="step-title">Qu'est-ce que ce rêve vous a fait ressentir ?</div>
       <div class="step-card">
-        <div class="a-label">Sentiment associé au rêve</div>
-        <input class="kw-input" style="min-height:auto;" id="sentiment-input" placeholder="ex. confusion, étonnement…">
+        <div class="a-label">Jusqu'à deux sentiments</div>
+        <div class="chip-pairs" id="sentiment-chips">
+          ${SENTIMENT_PAIRS.map(([a, b]) => `
+            <div class="chip-pair-row">
+              <button type="button" class="chip" data-val="${escapeHtml(a)}">${escapeHtml(a)}</button>
+              <span class="chip-pair-sep">↔</span>
+              <button type="button" class="chip" data-val="${escapeHtml(b)}">${escapeHtml(b)}</button>
+            </div>
+          `).join('')}
+        </div>
         <button class="kw-next" id="sentiment-next">Continuer →</button>
       </div>
     </div>
   `);
   bindTopNav();
-  const input = $('#sentiment-input');
   const btn = $('#sentiment-next');
-  input.oninput = () => { btn.disabled = !input.value.trim(); };
   btn.disabled = true;
+  $('#sentiment-chips').addEventListener('click', (e) => {
+    const chip = e.target.closest('.chip');
+    if (!chip) return;
+    const val = chip.dataset.val;
+    const idx = selected.indexOf(val);
+    if (idx > -1) {
+      selected.splice(idx, 1);
+      chip.classList.remove('selected');
+    } else {
+      if (selected.length >= 2) return;
+      selected.push(val);
+      chip.classList.add('selected');
+    }
+    $('#sentiment-chips').querySelectorAll('.chip').forEach(c => {
+      if (!selected.includes(c.dataset.val)) c.disabled = selected.length >= 2;
+    });
+    btn.disabled = selected.length === 0;
+  });
   btn.onclick = async () => {
     btn.disabled = true;
-    const { data, error } = await sb.from('reves').update({ sentiment: input.value.trim() }).eq('id', state.reve.id).select().single();
+    const { data, error } = await sb.from('reves').update({ sentiment: selected.join(', ') }).eq('id', state.reve.id).select().single();
     if (!error) state.reve = data;
     state.view = 'nom';
     render();
