@@ -82,13 +82,11 @@
   .view.center { justify-content: center; align-items: center; text-align: center; }
 
   /* Auth */
-  .auth-view { position: relative; }
+  .auth-view { position: relative; justify-content: flex-start; align-items: center; text-align: center; padding-top: 18px; }
   .auth-box { width: 100%; max-width: 320px; margin: 0 auto; display: flex; flex-direction: column; gap: 14px; }
   .auth-box h1 { font-size: 26px; }
-  .auth-view { justify-content: flex-start; padding-top: 40px; }
-  .auth-image { width: 112px; height: 148px; margin: 6px auto 0; overflow: hidden; }
-  .auth-image img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 22%; }
-  .auth-brand-top { text-align: center; font-family: 'Fraunces', Georgia, serif; font-size: 14px; font-weight: 500; letter-spacing: -0.01em; color: var(--ink-faint); }
+  .auth-image { width: 111px; margin: 6px auto 0; }
+  .auth-image img { width: 100%; height: auto; display: block; }
   .field { display: flex; flex-direction: column; gap: 6px; text-align: left; }
   .field label { font-size: 11px; font-family: 'IBM Plex Mono', monospace; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-faint); }
   .field input, .field textarea {
@@ -263,12 +261,10 @@ async function loadProfileAndGo() {
 function renderAuth() {
   const isSignup = state.authMode === 'signup';
   h(`
-    <div class="view center auth-view">
+    ${topNav(false, false)}
+    <div class="view auth-view">
       <div class="auth-box">
-        <div class="auth-brand-top">mykeros</div>
         <div class="auth-image"><img src="mykeros-figure-cutout.png" alt=""></div>
-        <h1>${isSignup ? 'Créer un compte' : 'Bon retour'}</h1>
-        <p style="color:var(--ink-soft);font-size:13px;margin:0 0 4px;">${isSignup ? 'Pour commencer à consigner vos rêves' : 'Content de vous revoir'}</p>
         <div id="auth-msg"></div>
         <form id="auth-form" class="auth-box" style="gap:12px;">
           ${isSignup ? `<div class="field"><label>Prénom</label><input type="text" id="auth-prenom" required autocomplete="given-name"></div>` : ''}
@@ -280,6 +276,7 @@ function renderAuth() {
       </div>
     </div>
   `);
+  bindTopNav();
   $('#auth-toggle').onclick = () => { state.authMode = isSignup ? 'signin' : 'signup'; renderAuth(); };
   $('#auth-form').onsubmit = async (e) => {
     e.preventDefault();
@@ -308,11 +305,12 @@ function renderAuth() {
   };
 }
 
-function topNav(showJournal) {
+function topNav(showJournal, showLogout) {
+  if (showLogout === undefined) showLogout = true;
   return `<div class="topnav">
     <button class="journal-link" id="nav-journal">${showJournal ? 'Journal' : ''}</button>
     <span class="brand">mykeros</span>
-    <button class="logout-link" id="nav-logout">Sortir</button>
+    <button class="logout-link" id="nav-logout">${showLogout ? 'Sortir' : ''}</button>
   </div>`;
 }
 function bindTopNav() {
