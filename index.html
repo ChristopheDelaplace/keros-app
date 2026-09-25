@@ -91,6 +91,7 @@
   #auth-toggle { margin-top: 6px; }
   .view.rest-view { padding-top: 57px; }
   .view.rest-view .rest-header { margin-top: 20px; }
+  .view.rest-view .step-title { margin-top: 20px; }
   .field { display: flex; flex-direction: column; gap: 6px; text-align: left; }
   .field label { font-size: 11px; font-family: 'IBM Plex Mono', monospace; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-faint); }
   .field input, .field textarea {
@@ -480,7 +481,8 @@ function renderSentiment() {
   const selected = [];
   h(`
     ${topNav(true)}
-    <div class="view">
+    <div class="view rest-view">
+      <div class="auth-image"><img src="mykeros-figure-cutout.png" alt=""></div>
       <div class="step-title">Qu'est-ce que ce rêve vous a fait ressentir ?</div>
       <div class="step-card">
         <div class="a-label">Jusqu'à deux sentiments</div>
