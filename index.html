@@ -197,6 +197,12 @@
   /* Journal */
   .journal-title { font-size: 22px; margin-bottom: 16px; }
   .journal-list { display: flex; flex-direction: column; gap: 10px; }
+  .syn-card { display: flex; align-items: center; gap: 12px; width: 100%; margin-bottom: 14px; padding: 13px 14px; border-radius: 12px; border: 1px solid var(--accent); background: var(--accent-soft); color: var(--ink); text-align: left; cursor: pointer; font-family: inherit; }
+  .syn-card .gl { color: var(--accent); flex-shrink: 0; display: flex; }
+  .syn-card .meta { flex: 1; min-width: 0; }
+  .syn-card .name { font-family: 'Fraunces', serif; font-size: 15px; }
+  .syn-card .sub { font-size: 11px; color: var(--ink-soft); margin-top: 2px; }
+  .syn-card .chev { color: var(--accent); flex-shrink: 0; }
   .journal-row { display: flex; align-items: center; gap: 12px; background: var(--card-2); border-radius: 12px; padding: 12px 14px; cursor: pointer; text-align: left; border: none; width: 100%; font-family: inherit; color: var(--ink); }
   .journal-row .num { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--ink-faint); flex-shrink: 0; width: 32px; }
   .journal-row .meta { flex: 1; min-width: 0; }
@@ -906,12 +912,25 @@ function renderJournalLoading() {
 }
 
 function renderJournal() {
+  const n = state.journal.length;
+  const isPremium = state.profile && state.profile.tier === 'premium';
+  const synthSub = !isPremium ? 'Vos rêves, vus ensemble · Premium'
+    : n >= SYNTHESE_MIN ? `Vos ${n} rêves, vus ensemble`
+    : `Disponible dès ${SYNTHESE_MIN} rêves (${n}/${SYNTHESE_MIN})`;
   h(`
     ${topNav(false)}
     <div class="view rest-view">
       <div class="auth-image"><img src="mykeros-figure-cutout.png" alt=""></div>
       <div class="journal-title display">Journal</div>
       ${state.journal.length === 0 ? `<div class="journal-empty">Aucun rêve consigné pour l'instant.</div>` : `
+        <button class="syn-card" id="go-synthese">
+          <span class="gl">${GLYPH(24)}</span>
+          <span class="meta">
+            <div class="name">Synthèse</div>
+            <div class="sub">${synthSub}</div>
+          </span>
+          <span class="chev"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg></span>
+        </button>
         <div class="journal-list">
           ${state.journal.map(r => `
             <button class="journal-row" data-id="${r.id}">
@@ -927,13 +946,13 @@ function renderJournal() {
       <div class="footer-actions">
         <button class="btn btn-primary btn-block" id="journal-new">Raconter un nouveau rêve</button>
       </div>
-      <div class="legal-links"><a id="go-synthese">Synthèse</a><a id="go-compte">Mon compte</a><a data-legal="confidentialite">Confidentialité</a></div>
+      <div class="legal-links"><a id="go-compte">Mon compte</a><a data-legal="confidentialite">Confidentialité</a></div>
     </div>
   `);
   bindTopNav();
   bindLegalLinks('journal');
   $('#go-compte').onclick = () => { state.view = 'compte'; render(); };
-  $('#go-synthese').onclick = () => { state.view = 'synthese'; render(); };
+  const gs = $('#go-synthese'); if (gs) gs.onclick = () => { state.view = 'synthese'; render(); };
   $('#journal-new').onclick = () => { state.view = 'recueil'; state.recit = ''; state.reve = null; render(); };
   root.querySelectorAll('.journal-row').forEach(btn => {
     btn.onclick = () => {
