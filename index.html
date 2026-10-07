@@ -985,8 +985,12 @@ function renderCompte() {
 }
 
 // ---------- PAGES LÉGALES ----------
-const CONTACT_EMAIL = ''; // à renseigner : adresse de contact (droits RGPD)
-const contactHtml = () => CONTACT_EMAIL ? `<a href="mailto:${CONTACT_EMAIL}">${CONTACT_EMAIL}</a>` : `<span class="todo">[adresse e-mail de contact]</span>`;
+const CONTACT_PARTS = ['privacy', 'mykeros.com']; // assemblée à l'affichage (anti-robots)
+const contactHtml = () => `<a data-mail>[adresse e-mail]</a>`;
+function fillContact() {
+  const addr = CONTACT_PARTS[0] + '@' + CONTACT_PARTS[1];
+  root.querySelectorAll('[data-mail]').forEach(a => { a.textContent = addr; a.href = 'mailto:' + addr; });
+}
 const LEGAL = {
   confidentialite: { titre: 'Confidentialité', html: () => `
     <p>mykeros est un projet en phase de test. Voici, simplement, ce qu'il fait de vos données.</p>
@@ -1026,6 +1030,7 @@ function renderLegal() {
     </div>
   `);
   bindTopNav();
+  fillContact();
   $('#legal-back').onclick = () => { state.view = state.legalBack || (loggedIn ? 'journal' : 'auth'); render(); };
 }
 
