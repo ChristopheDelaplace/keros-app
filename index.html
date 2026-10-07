@@ -767,7 +767,7 @@ function renderRestitution(reve) {
         <div class="motif-card"><span class="t">${escapeHtml(r.motif_recurrent.texte)}</span></div>
       ` : ''}
       ${(r.sections || []).length === 0 ? `
-        <div class="msg error" style="margin:12px 0;">La lecture de ce rêve n'a pas pu être générée.${(state.keywords || []).length ? ' <button class="link-btn" id="retry-empty">Relancer l\'analyse</button>' : ''}</div>
+        <div class="msg error" style="margin:12px 0;">La lecture de ce rêve n'a pas pu être générée. <button class="link-btn" id="retry-empty">Relancer l\'analyse</button></div>
       ` : ''}
       ${(r.sections || []).map(s => `
         <div class="rest-block"><h3>${escapeHtml(s.titre)}</h3><p>${escapeHtml(s.texte)}</p></div>
@@ -785,7 +785,13 @@ function renderRestitution(reve) {
   `);
   bindTopNav();
   $('#new-dream').onclick = () => { state.view = 'recueil'; state.recit = ''; state.reve = null; render(); };
-  const re = $('#retry-empty'); if (re) re.onclick = () => runRestitution(state.reve.contexte);
+  const re = $('#retry-empty');
+  if (re) re.onclick = async () => {
+    re.disabled = true; re.textContent = 'On y réfléchit…';
+    const { data: mots } = await sb.from('mots_cles').select('id, texte, categorie, ordre, associations(texte)').eq('reve_id', state.reve.id).order('ordre');
+    state.keywords = (mots || []).map(m => ({ texte: m.texte, categorie: m.categorie, association: (m.associations && m.associations[0] && m.associations[0].texte) || '' }));
+    await runRestitution(state.reve.contexte || '');
+  };
   const pb = $('#premium-btn'); if (pb) pb.onclick = () => alert('Le paiement Premium arrive bientôt.');
 }
 
