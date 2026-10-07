@@ -216,9 +216,6 @@
   .legal-body ul { padding-left: 18px; }
   .legal-body .todo { background: var(--rose-soft); color: var(--rose); border-radius: 4px; padding: 0 4px; }
   .legal-body .stamp { font-size: 11.5px; color: var(--ink-faint); }
-  .kw-block { margin-top: 6px; margin-bottom: 18px; }
-  .kw-block .kw-line { font-size: 13px; line-height: 1.5; margin: 0 0 6px; color: var(--ink-soft); }
-  .kw-block .kw-line b { color: var(--ink); font-weight: 600; }
   .danger-link { background: none; border: none; color: var(--danger); font-size: 12.5px; cursor: pointer; font-family: 'Work Sans', sans-serif; text-decoration: underline; padding: 6px; }
   .account-section { margin-top: 18px; display: flex; flex-direction: column; gap: 10px; text-align: left; }
   .account-section .row { display: flex; flex-direction: column; gap: 6px; }
@@ -306,7 +303,7 @@ function openLegal(doc, back) {
   state.legalDoc = doc; state.legalBack = back; state.view = 'legal'; render();
 }
 function legalLinksHtml() {
-  return `<div class="legal-links"><a data-legal="mentions">Mentions légales</a><a data-legal="confidentialite">Confidentialité</a><a data-legal="cgu">CGU</a></div>`;
+  return `<div class="legal-links"><a data-legal="confidentialite">Confidentialité</a><a data-legal="cgu">CGU</a></div>`;
 }
 function bindLegalLinks(back) {
   root.querySelectorAll('[data-legal]').forEach(a => { a.onclick = (e) => { e.preventDefault(); openLegal(a.dataset.legal, back); }; });
@@ -862,7 +859,6 @@ function renderRestitution(reve) {
           <button class="btn btn-primary" id="premium-btn">Bientôt</button>
         </div>
       ` : ''}
-      <div id="kw-block" class="kw-block"></div>
       <div class="footer-actions">
         <button class="btn btn-ghost btn-block" id="new-dream">Nouveau rêve</button>
       </div>
@@ -870,7 +866,6 @@ function renderRestitution(reve) {
     </div>
   `);
   bindTopNav();
-  if (reve.id) loadKeywordsBlock(reve.id);
   const dd = $('#del-dream');
   if (dd) dd.onclick = async () => {
     if (!confirm('Supprimer définitivement ce rêve, sa lecture, ses mots-clés et ses associations ?')) return;
@@ -888,16 +883,6 @@ function renderRestitution(reve) {
     await runRestitution(state.reve.contexte || '');
   };
   const pb = $('#premium-btn'); if (pb) pb.onclick = () => alert('Le paiement Premium arrive bientôt.');
-}
-
-async function loadKeywordsBlock(reveId) {
-  const { data } = await sb.from('mots_cles').select('texte, ordre, associations(texte)').eq('reve_id', reveId).order('ordre');
-  const el = $('#kw-block');
-  if (!el || !data || !data.length) return;
-  el.innerHTML = `<div class="rest-block" style="margin-bottom:8px"><h3>Mots-clés et associations</h3></div>` + data.map(m => {
-    const a = m.associations && m.associations[0] && m.associations[0].texte;
-    return `<p class="kw-line"><b>${escapeHtml(m.texte)}</b>${a ? ' — ' + escapeHtml(a) : ''}</p>`;
-  }).join('');
 }
 
 // ---------- JOURNAL ----------
@@ -1000,53 +985,32 @@ function renderCompte() {
 }
 
 // ---------- PAGES LÉGALES ----------
-const TODO = (t) => `<span class="todo">[À compléter : ${t}]</span>`;
+const CONTACT_EMAIL = ''; // à renseigner : adresse de contact (droits RGPD)
+const contactHtml = () => CONTACT_EMAIL ? `<a href="mailto:${CONTACT_EMAIL}">${CONTACT_EMAIL}</a>` : `<span class="todo">[adresse e-mail de contact]</span>`;
 const LEGAL = {
-  mentions: { titre: 'Mentions légales', html: () => `
-    <h3>Éditeur</h3>
-    <p>mykeros est édité par ${TODO('raison sociale et forme juridique, ou nom de l\'éditeur')}, ${TODO('capital, SIREN/RCS')}, dont le siège est situé ${TODO('adresse')}.</p>
-    <p>Directeur de la publication : ${TODO('nom')}. Contact : ${TODO('adresse e-mail de contact')}.</p>
-    <h3>Hébergement</h3>
-    <p>L'application est servie par GitHub Pages (GitHub, Inc., San Francisco, États-Unis). Les données des comptes sont hébergées par Supabase (région ${TODO('région choisie, ex. UE')}).</p>
-    <h3>Propriété intellectuelle</h3>
-    <p>Le nom, l'identité visuelle et les contenus de mykeros sont protégés. Les récits de rêves et textes que vous saisissez restent votre propriété.</p>
-    <p class="stamp">Dernière mise à jour : 7 octobre 2026.</p>` },
   confidentialite: { titre: 'Confidentialité', html: () => `
-    <h3>Responsable du traitement</h3>
-    <p>${TODO('identité de l\'éditeur, voir mentions légales')}. Contact pour toute question ou demande : ${TODO('adresse e-mail')}.</p>
-    <h3>Données traitées</h3>
-    <ul><li>Compte : adresse e-mail, prénom, genre (facultatif).</li><li>Contenu : récits de rêves (transcriptions), émotions choisies, titres, mots-clés, associations, contexte, lectures générées.</li><li>Consentement : date et version acceptée.</li></ul>
-    <p>Un récit de rêve peut révéler, sans que vous le vouliez, des informations sensibles (santé, vie intime, convictions). Nous ne les recherchons pas, mais elles sont traitées avec votre <b>consentement explicite</b> (art. 9.2.a du RGPD), donné à l'inscription et retirable à tout moment en supprimant votre compte.</p>
-    <h3>Finalités et bases légales</h3>
-    <ul><li>Fournir le service (journal, lecture des rêves) : exécution du contrat.</li><li>Traiter les données sensibles éventuelles : consentement.</li><li>Sécurité et prévention des abus : intérêt légitime.</li></ul>
-    <p>Aucune publicité, aucune revente de données, aucune décision automatisée produisant des effets juridiques. Les lectures sont des hypothèses générées par IA, sans valeur de diagnostic.</p>
-    <h3>Destinataires et transferts hors UE</h3>
-    <ul><li>Supabase : hébergement de la base et authentification.</li><li>Anthropic (États-Unis) : génération des lectures. Le contenu du rêve, des mots-clés et du contexte lui est transmis pour produire la lecture ; ${TODO('vérifier les conditions applicables : non-utilisation pour l\'entraînement, clauses contractuelles types / cadre de transfert')}.</li><li>Dictée vocale : elle est réalisée par le service de reconnaissance vocale de votre navigateur ou de votre appareil (Apple, Google ou autre selon l'appareil), avant tout envoi à mykeros.</li></ul>
-    <h3>Durée de conservation</h3>
-    <p>Vos données sont conservées tant que votre compte existe. La suppression d'un rêve ou du compte (menu « Mon compte ») efface immédiatement les données associées de la base active.</p>
+    <p>mykeros est un projet en phase de test. Voici, simplement, ce qu'il fait de vos données.</p>
+    <h3>Ce que nous conservons</h3>
+    <ul><li>Votre adresse e-mail, votre prénom et, si vous le souhaitez, votre genre.</li><li>Vos rêves : récit, émotion, titre, mots-clés, associations, contexte et lecture générée.</li></ul>
+    <p>Un rêve peut révéler des informations sensibles (santé, vie intime, convictions). En créant votre compte, vous consentez expressément à ce que ces contenus soient traités pour produire vos lectures.</p>
+    <h3>Pourquoi, et avec qui</h3>
+    <ul><li>Uniquement pour faire fonctionner votre journal et générer vos lectures. Aucune publicité, aucune revente.</li><li>Les données sont hébergées par Supabase. Pour générer une lecture, le contenu du rêve est transmis à Anthropic (États-Unis), qui fournit l'IA.</li><li>La dictée vocale est assurée par le service de reconnaissance vocale de votre navigateur ou appareil.</li></ul>
     <h3>Vos droits</h3>
-    <p>Accès, rectification, effacement, limitation, opposition, portabilité (export JSON dans « Mon compte »), retrait du consentement, directives sur le sort des données après décès. Pour les exercer : ${TODO('adresse e-mail')}. Vous pouvez aussi saisir la CNIL (cnil.fr).</p>
-    <h3>Cookies et stockage</h3>
-    <p>mykeros n'utilise ni cookie publicitaire ni outil de mesure d'audience. Le navigateur conserve uniquement votre session de connexion, nécessaire au fonctionnement.</p>
-    <h3>Âge minimum</h3>
-    <p>Le service est réservé aux personnes de 15 ans ou plus.</p>
-    <p class="stamp">Dernière mise à jour : 7 octobre 2026.</p>` },
+    <p>Vous pouvez à tout moment exporter vos données et supprimer vos rêves ou votre compte depuis « Mon compte » : la suppression est immédiate et définitive. Pour toute autre demande (accès, rectification, opposition) : ${contactHtml()}. Vous pouvez aussi saisir la CNIL (cnil.fr).</p>
+    <h3>Cookies</h3>
+    <p>Aucun cookie publicitaire ni mesure d'audience. Seule votre session de connexion est conservée.</p>
+    <p class="stamp">Version de test, mise à jour le 7 octobre 2026.</p>` },
   cgu: { titre: 'Conditions d\'utilisation', html: () => `
-    <h3>Objet</h3>
-    <p>mykeros est un journal de rêves accompagné d'une lecture par intelligence artificielle, inspirée de la psychologie analytique. Le service gratuit offre la saisie, le journal et une lecture par rêve.</p>
+    <p>mykeros est un journal de rêves accompagné d'une lecture par intelligence artificielle, en phase de test et gratuit.</p>
     <h3>Ce que mykeros n'est pas</h3>
-    <p>mykeros n'est pas un dispositif médical, ni une thérapie. Les lectures sont des pistes de réflexion, jamais un diagnostic ni un conseil médical ou psychologique. En cas de détresse, contactez un professionnel de santé ou les services d'urgence (en France : 3114, numéro national de prévention du suicide ; 15 ou 112 en urgence).</p>
-    <h3>Votre compte</h3>
-    <p>Vous êtes responsable de la confidentialité de votre mot de passe et de l'exactitude des informations fournies. Vous pouvez supprimer votre compte à tout moment depuis « Mon compte ».</p>
-    <h3>Votre contenu</h3>
-    <p>Vous restez propriétaire de vos récits. Vous nous autorisez uniquement à les traiter pour fournir le service, comme décrit dans la politique de confidentialité.</p>
-    <h3>Disponibilité et responsabilité</h3>
-    <p>Le service est fourni en l'état, sans garantie de disponibilité continue. Les lectures générées par IA peuvent comporter des erreurs. Notre responsabilité ne saurait être engagée du fait de l'usage que vous faites de ces lectures, dans les limites permises par la loi.</p>
-    <h3>Offre Premium</h3>
-    <p>Une offre payante est envisagée. Ses conditions et son prix vous seront présentés avant toute souscription.</p>
+    <p>Ce n'est ni un dispositif médical ni une thérapie. Les lectures sont des pistes de réflexion, jamais un diagnostic ni un conseil médical ou psychologique. Elles peuvent comporter des erreurs. En cas de détresse, contactez un professionnel de santé ou les urgences (en France : 3114 pour la prévention du suicide, 15 ou 112 en urgence).</p>
+    <h3>Votre compte et vos contenus</h3>
+    <p>Le service est réservé aux personnes de 15 ans ou plus. Vous gardez la propriété de vos récits ; vous nous autorisez seulement à les traiter pour vous fournir le service. Vous pouvez supprimer votre compte à tout moment.</p>
+    <h3>Disponibilité</h3>
+    <p>Le service est fourni en l'état, sans garantie de disponibilité, et peut évoluer ou s'arrêter pendant la phase de test. Une offre payante pourra être proposée plus tard ; ses conditions vous seront présentées avant toute souscription.</p>
     <h3>Droit applicable</h3>
-    <p>Droit français. Si vous êtes consommateur, vous bénéficiez des protections impératives de votre pays de résidence ainsi que des dispositifs de médiation de la consommation.</p>
-    <p class="stamp">Dernière mise à jour : 7 octobre 2026.</p>` },
+    <p>Droit français.</p>
+    <p class="stamp">Version de test, mise à jour le 7 octobre 2026.</p>` },
 };
 
 function renderLegal() {
