@@ -82,7 +82,7 @@
   .view.center { justify-content: center; align-items: center; text-align: center; }
 
   /* Auth */
-  .auth-view { position: relative; justify-content: flex-start; align-items: center; text-align: center; padding-top: 57px; }
+  .auth-view { position: relative; justify-content: flex-start; align-items: center; text-align: center; padding-top: 57px; padding-bottom: 46px; }
   .auth-box { width: 100%; max-width: 320px; margin: 0 auto; display: flex; flex-direction: column; gap: 0; }
   .auth-box h1 { font-size: 26px; }
   .auth-image { width: 108px; margin: 0 auto; }
@@ -206,6 +206,23 @@
   .fab { position: fixed; bottom: 24px; right: 24px; z-index: 5; }
 
   .footer-actions { display: flex; gap: 10px; margin-top: 16px; }
+  .check-row { display: flex; gap: 10px; align-items: flex-start; text-align: left; font-size: 11.5px; line-height: 1.45; color: var(--ink-soft); margin: 4px 0 2px; }
+  .check-row input { margin-top: 2px; flex: none; width: 16px; height: 16px; accent-color: var(--accent); }
+  .check-row a, .legal-links a, .legal-body a { color: var(--accent); text-decoration: underline; cursor: pointer; }
+  .legal-links { display: flex; gap: 6px 12px; flex-wrap: wrap; justify-content: center; font-size: 11.5px; margin-top: 14px; color: var(--ink-faint); }
+  .legal-body { text-align: left; font-size: 13px; line-height: 1.6; color: var(--ink); }
+  .legal-body h3 { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-soft); margin: 18px 0 6px; }
+  .legal-body p, .legal-body ul { margin: 0 0 8px; padding: 0; }
+  .legal-body ul { padding-left: 18px; }
+  .legal-body .todo { background: var(--rose-soft); color: var(--rose); border-radius: 4px; padding: 0 4px; }
+  .legal-body .stamp { font-size: 11.5px; color: var(--ink-faint); }
+  .kw-block { margin-top: 6px; margin-bottom: 18px; }
+  .kw-block .kw-line { font-size: 13px; line-height: 1.5; margin: 0 0 6px; color: var(--ink-soft); }
+  .kw-block .kw-line b { color: var(--ink); font-weight: 600; }
+  .danger-link { background: none; border: none; color: var(--danger); font-size: 12.5px; cursor: pointer; font-family: 'Work Sans', sans-serif; text-decoration: underline; padding: 6px; }
+  .account-section { margin-top: 18px; display: flex; flex-direction: column; gap: 10px; text-align: left; }
+  .account-section .row { display: flex; flex-direction: column; gap: 6px; }
+  .account-section .mail { font-size: 13px; color: var(--ink-soft); }
 
   .footer-glyph { position: absolute; left: 0; right: 0; bottom: 12px; display: flex; justify-content: center; color: var(--accent); opacity: 0.55; pointer-events: none; z-index: 2; }
   .footer-actions .btn { flex: 1; }
@@ -235,6 +252,10 @@ let state = {
   keywords: [],     // [{texte, categorie, association}]
   kwIndex: 0,
   journal: [],
+  authDraft: {},
+  recovery: false,
+  legalDoc: 'confidentialite',
+  legalBack: 'auth',
 };
 
 const root = document.getElementById('app-root');
@@ -254,14 +275,17 @@ function fmtDate(d) {
 async function init() {
   const { data } = await sb.auth.getSession();
   state.session = data.session;
+  if (location.hash.includes('type=recovery')) state.recovery = true;
   sb.auth.onAuthStateChange((_event, session) => {
     state.session = session;
+    if (_event === 'PASSWORD_RECOVERY') { state.recovery = true; state.view = 'reset'; render(); return; }
     if (session) { loadProfileAndGo(); } else { state.view = 'auth'; render(); }
   });
   if (state.session) { await loadProfileAndGo(); } else { state.view = 'auth'; render(); }
 }
 
 async function loadProfileAndGo() {
+  if (state.recovery) { state.view = 'reset'; render(); return; }
   const uid = state.session.user.id;
   let { data: profile } = await sb.from('profiles').select('*').eq('id', uid).maybeSingle();
   if (!profile) {
@@ -274,8 +298,25 @@ async function loadProfileAndGo() {
   render();
 }
 
+const CONSENT_VERSION = '2026-10-07';
+function openLegal(doc, back) {
+  if (state.view === 'auth') {
+    state.authDraft = { prenom: $('#auth-prenom')?.value || '', genre: $('#auth-genre')?.value || '', email: $('#auth-email')?.value || '' };
+  }
+  state.legalDoc = doc; state.legalBack = back; state.view = 'legal'; render();
+}
+function legalLinksHtml() {
+  return `<div class="legal-links"><a data-legal="mentions">Mentions légales</a><a data-legal="confidentialite">Confidentialité</a><a data-legal="cgu">CGU</a></div>`;
+}
+function bindLegalLinks(back) {
+  root.querySelectorAll('[data-legal]').forEach(a => { a.onclick = (e) => { e.preventDefault(); openLegal(a.dataset.legal, back); }; });
+}
+
 function renderAuth() {
-  const isSignup = state.authMode === 'signup';
+  const mode = state.authMode;
+  const isSignup = mode === 'signup';
+  const isForgot = mode === 'forgot';
+  const d = state.authDraft || {};
   h(`
     ${topNav(false, false)}
     <div class="view auth-view">
@@ -283,32 +324,42 @@ function renderAuth() {
         <div class="auth-image"><img src="mykeros-figure-cutout.png" alt=""></div>
         <div id="auth-msg"></div>
         <form id="auth-form" class="auth-box" style="gap:9px;">
-          ${isSignup ? `<div class="field"><label>Prénom</label><input type="text" id="auth-prenom" required autocomplete="given-name"></div>` : ''}
-          ${isSignup ? `<div class="field"><label>Genre <span style="opacity:.6">(optionnel)</span></label><select id="auth-genre"><option value="">Je préfère ne pas dire</option><option value="femme">Femme</option><option value="homme">Homme</option><option value="autre">Autre</option></select></div>` : ''}
-          <div class="field"><label>Email</label><input type="email" id="auth-email" required autocomplete="email"></div>
-          <div class="field"><label>Mot de passe</label><input type="password" id="auth-password" required minlength="6" autocomplete="${isSignup ? 'new-password' : 'current-password'}"></div>
-          <button type="submit" class="btn btn-primary btn-block" id="auth-submit">${isSignup ? "S'inscrire" : "Se connecter"}</button>
+          ${isSignup ? `<div class="field"><label>Prénom</label><input type="text" id="auth-prenom" required autocomplete="given-name" value="${escapeHtml(d.prenom || '')}"></div>` : ''}
+          ${isSignup ? `<div class="field"><label>Genre <span style="opacity:.6">(optionnel)</span></label><select id="auth-genre"><option value="">Je préfère ne pas dire</option><option value="femme"${d.genre === 'femme' ? ' selected' : ''}>Femme</option><option value="homme"${d.genre === 'homme' ? ' selected' : ''}>Homme</option><option value="autre"${d.genre === 'autre' ? ' selected' : ''}>Autre</option></select></div>` : ''}
+          <div class="field"><label>Email</label><input type="email" id="auth-email" required autocomplete="email" value="${escapeHtml(d.email || '')}"></div>
+          ${isForgot ? '' : `<div class="field"><label>Mot de passe</label><input type="password" id="auth-password" required minlength="6" autocomplete="${isSignup ? 'new-password' : 'current-password'}"></div>`}
+          ${isSignup ? `<label class="check-row"><input type="checkbox" id="auth-consent" required><span>J'ai 15 ans ou plus. J'accepte les <a data-legal="cgu">CGU</a> et la <a data-legal="confidentialite">politique de confidentialité</a>, et je consens expressément au traitement de mes récits de rêves, qui peuvent révéler des données sensibles.</span></label>` : ''}
+          <button type="submit" class="btn btn-primary btn-block" id="auth-submit">${isSignup ? "S'inscrire" : isForgot ? 'Envoyer le lien' : 'Se connecter'}</button>
         </form>
-        <button class="link-btn" id="auth-toggle">${isSignup ? 'Déjà un compte ? Se connecter' : "Pas de compte ? S'inscrire"}</button>
+        <button class="link-btn" id="auth-toggle">${isSignup ? 'Déjà un compte ? Se connecter' : isForgot ? 'Retour à la connexion' : "Pas de compte ? S'inscrire"}</button>
+        ${mode === 'signin' ? `<button class="link-btn" id="auth-forgot" style="margin-top:2px">Mot de passe oublié ?</button>` : ''}
+        ${legalLinksHtml()}
       </div>
     </div>
   `);
   bindTopNav();
-  $('#auth-toggle').onclick = () => { state.authMode = isSignup ? 'signin' : 'signup'; renderAuth(); };
+  bindLegalLinks('auth');
+  $('#auth-toggle').onclick = () => { state.authMode = (isSignup || isForgot) ? 'signin' : 'signup'; renderAuth(); };
+  const fg = $('#auth-forgot'); if (fg) fg.onclick = () => { state.authDraft = { email: $('#auth-email').value }; state.authMode = 'forgot'; renderAuth(); };
   $('#auth-form').onsubmit = async (e) => {
     e.preventDefault();
     const email = $('#auth-email').value.trim();
-    const password = $('#auth-password').value;
+    const password = $('#auth-password')?.value;
     const btn = $('#auth-submit');
     btn.disabled = true;
     const msgEl = $('#auth-msg');
     msgEl.innerHTML = '';
     try {
-      if (isSignup) {
+      if (isForgot) {
+        const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname });
+        if (error) throw error;
+        msgEl.innerHTML = `<div class="msg ok">Si un compte existe pour cette adresse, un lien de réinitialisation vient d'être envoyé.</div>`;
+      } else if (isSignup) {
         const prenom = $('#auth-prenom')?.value.trim();
         const genre = $('#auth-genre')?.value || '';
-        const { error } = await sb.auth.signUp({ email, password, options: { data: { prenom, genre } } });
+        const { error } = await sb.auth.signUp({ email, password, options: { data: { prenom, genre, consent_at: new Date().toISOString(), consent_version: CONSENT_VERSION } } });
         if (error) throw error;
+        state.authDraft = {};
         msgEl.innerHTML = `<div class="msg ok">Compte créé. Si la confirmation par email est activée, vérifiez votre boîte avant de vous connecter.</div>`;
         state.authMode = 'signin';
       } else {
@@ -320,6 +371,36 @@ function renderAuth() {
     } finally {
       btn.disabled = false;
     }
+  };
+}
+
+function renderReset() {
+  h(`
+    ${topNav(false, false)}
+    <div class="view auth-view">
+      <div class="auth-box">
+        <div class="auth-image"><img src="mykeros-figure-cutout.png" alt=""></div>
+        <div id="auth-msg"></div>
+        <form id="auth-form" class="auth-box" style="gap:9px;">
+          <div class="field"><label>Nouveau mot de passe</label><input type="password" id="new-pw" required minlength="8" autocomplete="new-password"></div>
+          <div class="field"><label>Confirmer</label><input type="password" id="new-pw2" required minlength="8" autocomplete="new-password"></div>
+          <button type="submit" class="btn btn-primary btn-block" id="auth-submit">Enregistrer</button>
+        </form>
+      </div>
+    </div>
+  `);
+  bindTopNav();
+  $('#auth-form').onsubmit = async (e) => {
+    e.preventDefault();
+    const a = $('#new-pw').value, b = $('#new-pw2').value;
+    const msgEl = $('#auth-msg');
+    if (a !== b) { msgEl.innerHTML = `<div class="msg error">Les deux mots de passe ne correspondent pas.</div>`; return; }
+    const btn = $('#auth-submit'); btn.disabled = true;
+    const { error } = await sb.auth.updateUser({ password: a });
+    if (error) { msgEl.innerHTML = `<div class="msg error">${escapeHtml(error.message)}</div>`; btn.disabled = false; return; }
+    state.recovery = false;
+    history.replaceState(null, '', location.pathname);
+    await loadProfileAndGo();
   };
 }
 
@@ -781,12 +862,23 @@ function renderRestitution(reve) {
           <button class="btn btn-primary" id="premium-btn">Bientôt</button>
         </div>
       ` : ''}
+      <div id="kw-block" class="kw-block"></div>
       <div class="footer-actions">
         <button class="btn btn-ghost btn-block" id="new-dream">Nouveau rêve</button>
       </div>
+      ${reve.id ? `<div style="text-align:center;margin-top:10px"><button class="danger-link" id="del-dream">Supprimer ce rêve</button></div>` : ''}
     </div>
   `);
   bindTopNav();
+  if (reve.id) loadKeywordsBlock(reve.id);
+  const dd = $('#del-dream');
+  if (dd) dd.onclick = async () => {
+    if (!confirm('Supprimer définitivement ce rêve, sa lecture, ses mots-clés et ses associations ?')) return;
+    dd.disabled = true;
+    const { error } = await sb.from('reves').delete().eq('id', reve.id);
+    if (error) { alert('Suppression impossible : ' + error.message); dd.disabled = false; return; }
+    await goJournal();
+  };
   $('#new-dream').onclick = () => { state.view = 'recueil'; state.recit = ''; state.reve = null; render(); };
   const re = $('#retry-empty');
   if (re) re.onclick = async () => {
@@ -796,6 +888,16 @@ function renderRestitution(reve) {
     await runRestitution(state.reve.contexte || '');
   };
   const pb = $('#premium-btn'); if (pb) pb.onclick = () => alert('Le paiement Premium arrive bientôt.');
+}
+
+async function loadKeywordsBlock(reveId) {
+  const { data } = await sb.from('mots_cles').select('texte, ordre, associations(texte)').eq('reve_id', reveId).order('ordre');
+  const el = $('#kw-block');
+  if (!el || !data || !data.length) return;
+  el.innerHTML = `<div class="rest-block" style="margin-bottom:8px"><h3>Mots-clés et associations</h3></div>` + data.map(m => {
+    const a = m.associations && m.associations[0] && m.associations[0].texte;
+    return `<p class="kw-line"><b>${escapeHtml(m.texte)}</b>${a ? ' — ' + escapeHtml(a) : ''}</p>`;
+  }).join('');
 }
 
 // ---------- JOURNAL ----------
@@ -835,9 +937,12 @@ function renderJournal() {
       <div class="footer-actions">
         <button class="btn btn-primary btn-block" id="journal-new">Raconter un nouveau rêve</button>
       </div>
+      <div class="legal-links"><a id="go-compte">Mon compte</a><a data-legal="confidentialite">Confidentialité</a></div>
     </div>
   `);
   bindTopNav();
+  bindLegalLinks('journal');
+  $('#go-compte').onclick = () => { state.view = 'compte'; render(); };
   $('#journal-new').onclick = () => { state.view = 'recueil'; state.recit = ''; state.reve = null; render(); };
   root.querySelectorAll('.journal-row').forEach(btn => {
     btn.onclick = () => {
@@ -849,10 +954,124 @@ function renderJournal() {
   });
 }
 
+// ---------- COMPTE ----------
+function renderCompte() {
+  const u = state.session?.user || {};
+  const genre = u.user_metadata?.genre || '';
+  h(`
+    ${topNav(true)}
+    <div class="view rest-view">
+      <div class="auth-image"><img src="mykeros-figure-cutout.png" alt=""></div>
+      <div class="journal-title display">Mon compte</div>
+      <div id="acc-msg"></div>
+      <div class="account-section">
+        <div class="row"><span class="mail">${escapeHtml(u.email || '')}</span></div>
+        <div class="field"><label>Genre <span style="opacity:.6">(optionnel)</span></label>
+          <select id="acc-genre"><option value="">Je préfère ne pas dire</option><option value="femme"${genre === 'femme' ? ' selected' : ''}>Femme</option><option value="homme"${genre === 'homme' ? ' selected' : ''}>Homme</option><option value="autre"${genre === 'autre' ? ' selected' : ''}>Autre</option></select>
+        </div>
+        <button class="btn btn-ghost btn-block" id="acc-export">Exporter mes données</button>
+        <div style="text-align:center"><button class="danger-link" id="acc-delete">Supprimer mon compte</button></div>
+      </div>
+      ${legalLinksHtml()}
+    </div>
+  `);
+  bindTopNav();
+  bindLegalLinks('compte');
+  const msg = (cls, t) => { $('#acc-msg').innerHTML = `<div class="msg ${cls}" style="margin-bottom:6px">${escapeHtml(t)}</div>`; };
+  $('#acc-genre').onchange = async (e) => {
+    const { error } = await sb.auth.updateUser({ data: { genre: e.target.value } });
+    if (error) msg('error', error.message); else msg('ok', 'Genre enregistré.');
+  };
+  $('#acc-export').onclick = async () => {
+    const { data, error } = await sb.from('reves').select('*, mots_cles(*, associations(*))').eq('user_id', u.id).order('numero');
+    if (error) return msg('error', error.message);
+    const blob = new Blob([JSON.stringify({ exporte_le: new Date().toISOString(), email: u.email, reves: data }, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'mykeros-mes-donnees.json'; a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  };
+  $('#acc-delete').onclick = async () => {
+    const t = prompt('Cette action est définitive : compte, rêves, lectures, tout sera effacé.\nTapez SUPPRIMER pour confirmer.');
+    if (t !== 'SUPPRIMER') return;
+    const { error } = await sb.functions.invoke('delete-account', { body: {} });
+    if (error) return msg('error', 'Suppression impossible : ' + (error.message || error));
+    await sb.auth.signOut();
+    state.authMode = 'signin'; state.authDraft = {};
+  };
+}
+
+// ---------- PAGES LÉGALES ----------
+const TODO = (t) => `<span class="todo">[À compléter : ${t}]</span>`;
+const LEGAL = {
+  mentions: { titre: 'Mentions légales', html: () => `
+    <h3>Éditeur</h3>
+    <p>mykeros est édité par ${TODO('raison sociale et forme juridique, ou nom de l\'éditeur')}, ${TODO('capital, SIREN/RCS')}, dont le siège est situé ${TODO('adresse')}.</p>
+    <p>Directeur de la publication : ${TODO('nom')}. Contact : ${TODO('adresse e-mail de contact')}.</p>
+    <h3>Hébergement</h3>
+    <p>L'application est servie par GitHub Pages (GitHub, Inc., San Francisco, États-Unis). Les données des comptes sont hébergées par Supabase (région ${TODO('région choisie, ex. UE')}).</p>
+    <h3>Propriété intellectuelle</h3>
+    <p>Le nom, l'identité visuelle et les contenus de mykeros sont protégés. Les récits de rêves et textes que vous saisissez restent votre propriété.</p>
+    <p class="stamp">Dernière mise à jour : 7 octobre 2026.</p>` },
+  confidentialite: { titre: 'Confidentialité', html: () => `
+    <h3>Responsable du traitement</h3>
+    <p>${TODO('identité de l\'éditeur, voir mentions légales')}. Contact pour toute question ou demande : ${TODO('adresse e-mail')}.</p>
+    <h3>Données traitées</h3>
+    <ul><li>Compte : adresse e-mail, prénom, genre (facultatif).</li><li>Contenu : récits de rêves (transcriptions), émotions choisies, titres, mots-clés, associations, contexte, lectures générées.</li><li>Consentement : date et version acceptée.</li></ul>
+    <p>Un récit de rêve peut révéler, sans que vous le vouliez, des informations sensibles (santé, vie intime, convictions). Nous ne les recherchons pas, mais elles sont traitées avec votre <b>consentement explicite</b> (art. 9.2.a du RGPD), donné à l'inscription et retirable à tout moment en supprimant votre compte.</p>
+    <h3>Finalités et bases légales</h3>
+    <ul><li>Fournir le service (journal, lecture des rêves) : exécution du contrat.</li><li>Traiter les données sensibles éventuelles : consentement.</li><li>Sécurité et prévention des abus : intérêt légitime.</li></ul>
+    <p>Aucune publicité, aucune revente de données, aucune décision automatisée produisant des effets juridiques. Les lectures sont des hypothèses générées par IA, sans valeur de diagnostic.</p>
+    <h3>Destinataires et transferts hors UE</h3>
+    <ul><li>Supabase : hébergement de la base et authentification.</li><li>Anthropic (États-Unis) : génération des lectures. Le contenu du rêve, des mots-clés et du contexte lui est transmis pour produire la lecture ; ${TODO('vérifier les conditions applicables : non-utilisation pour l\'entraînement, clauses contractuelles types / cadre de transfert')}.</li><li>Dictée vocale : elle est réalisée par le service de reconnaissance vocale de votre navigateur ou de votre appareil (Apple, Google ou autre selon l'appareil), avant tout envoi à mykeros.</li></ul>
+    <h3>Durée de conservation</h3>
+    <p>Vos données sont conservées tant que votre compte existe. La suppression d'un rêve ou du compte (menu « Mon compte ») efface immédiatement les données associées de la base active.</p>
+    <h3>Vos droits</h3>
+    <p>Accès, rectification, effacement, limitation, opposition, portabilité (export JSON dans « Mon compte »), retrait du consentement, directives sur le sort des données après décès. Pour les exercer : ${TODO('adresse e-mail')}. Vous pouvez aussi saisir la CNIL (cnil.fr).</p>
+    <h3>Cookies et stockage</h3>
+    <p>mykeros n'utilise ni cookie publicitaire ni outil de mesure d'audience. Le navigateur conserve uniquement votre session de connexion, nécessaire au fonctionnement.</p>
+    <h3>Âge minimum</h3>
+    <p>Le service est réservé aux personnes de 15 ans ou plus.</p>
+    <p class="stamp">Dernière mise à jour : 7 octobre 2026.</p>` },
+  cgu: { titre: 'Conditions d\'utilisation', html: () => `
+    <h3>Objet</h3>
+    <p>mykeros est un journal de rêves accompagné d'une lecture par intelligence artificielle, inspirée de la psychologie analytique. Le service gratuit offre la saisie, le journal et une lecture par rêve.</p>
+    <h3>Ce que mykeros n'est pas</h3>
+    <p>mykeros n'est pas un dispositif médical, ni une thérapie. Les lectures sont des pistes de réflexion, jamais un diagnostic ni un conseil médical ou psychologique. En cas de détresse, contactez un professionnel de santé ou les services d'urgence (en France : 3114, numéro national de prévention du suicide ; 15 ou 112 en urgence).</p>
+    <h3>Votre compte</h3>
+    <p>Vous êtes responsable de la confidentialité de votre mot de passe et de l'exactitude des informations fournies. Vous pouvez supprimer votre compte à tout moment depuis « Mon compte ».</p>
+    <h3>Votre contenu</h3>
+    <p>Vous restez propriétaire de vos récits. Vous nous autorisez uniquement à les traiter pour fournir le service, comme décrit dans la politique de confidentialité.</p>
+    <h3>Disponibilité et responsabilité</h3>
+    <p>Le service est fourni en l'état, sans garantie de disponibilité continue. Les lectures générées par IA peuvent comporter des erreurs. Notre responsabilité ne saurait être engagée du fait de l'usage que vous faites de ces lectures, dans les limites permises par la loi.</p>
+    <h3>Offre Premium</h3>
+    <p>Une offre payante est envisagée. Ses conditions et son prix vous seront présentés avant toute souscription.</p>
+    <h3>Droit applicable</h3>
+    <p>Droit français. Si vous êtes consommateur, vous bénéficiez des protections impératives de votre pays de résidence ainsi que des dispositifs de médiation de la consommation.</p>
+    <p class="stamp">Dernière mise à jour : 7 octobre 2026.</p>` },
+};
+
+function renderLegal() {
+  const doc = LEGAL[state.legalDoc] || LEGAL.confidentialite;
+  const loggedIn = !!state.session;
+  h(`
+    ${topNav(false, false)}
+    <div class="view rest-view">
+      <div class="auth-image"><img src="mykeros-figure-cutout.png" alt=""></div>
+      <div class="journal-title display">${escapeHtml(doc.titre)}</div>
+      <div class="legal-body">${doc.html()}</div>
+      <div class="footer-actions"><button class="btn btn-ghost btn-block" id="legal-back">Retour</button></div>
+    </div>
+  `);
+  bindTopNav();
+  $('#legal-back').onclick = () => { state.view = state.legalBack || (loggedIn ? 'journal' : 'auth'); render(); };
+}
+
 // ---------- RENDER DISPATCH ----------
 function render() {
   switch (state.view) {
     case 'auth': return renderAuth();
+    case 'reset': return renderReset();
+    case 'compte': return renderCompte();
+    case 'legal': return renderLegal();
     case 'recueil': return renderRecueil();
     case 'sentiment': return renderSentiment();
     case 'nom': return renderNom();
