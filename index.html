@@ -200,6 +200,7 @@
   .syn-card { display: flex; align-items: center; gap: 12px; width: 100%; margin-bottom: 14px; padding: 13px 14px; border-radius: 12px; border: 1px solid var(--accent); background: var(--accent-soft); color: var(--ink); text-align: left; cursor: pointer; font-family: inherit; }
   .syn-card .gl { color: var(--accent); flex-shrink: 0; display: flex; }
   .syn-card .meta { flex: 1; min-width: 0; }
+  .syn-card .sub { font-size: 11px; color: var(--ink-soft); margin-top: 2px; }
   .syn-card .name { font-family: 'Fraunces', serif; font-size: 15px; }
   .syn-card .chev { color: var(--accent); flex-shrink: 0; }
   .journal-row { display: flex; align-items: center; gap: 12px; background: var(--card-2); border-radius: 12px; padding: 12px 14px; cursor: pointer; text-align: left; border: none; width: 100%; font-family: inherit; color: var(--ink); }
@@ -259,6 +260,7 @@ let state = {
   keywords: [],     // [{texte, categorie, association}]
   kwIndex: 0,
   journal: [],
+  lastSyn: null,
   authDraft: {},
   recovery: false,
   legalDoc: 'confidentialite',
@@ -899,8 +901,13 @@ function renderRestitution(reve) {
 async function goJournal() {
   state.view = 'journal-loading';
   render();
-  const { data, error } = await sb.from('reves').select('*').eq('user_id', state.session.user.id).order('numero', { ascending: false });
+  const uid = state.session.user.id;
+  const [{ data, error }, { data: syn }] = await Promise.all([
+    sb.from('reves').select('*').eq('user_id', uid).order('numero', { ascending: false }),
+    sb.from('syntheses').select('created_at, nb_reves').eq('user_id', uid).order('created_at', { ascending: false }).limit(1),
+  ]);
   state.journal = error ? [] : data;
+  state.lastSyn = (syn && syn[0]) || null;
   state.view = 'journal';
   render();
 }
@@ -918,9 +925,10 @@ function renderJournal() {
       <div class="journal-title display">Journal</div>
       ${state.journal.length === 0 ? `<div class="journal-empty">Aucun rêve consigné pour l'instant.</div>` : `
         <button class="syn-card" id="go-synthese">
-          <span class="gl">${GLYPH(24)}</span>
+          <span class="gl">${GLYPH(24).replace('viewBox="0 0 100 100"', 'viewBox="14 10 72 52"').replace(/height="\d+"/, 'height="16"')}</span>
           <span class="meta">
             <div class="name">Synthèse</div>
+            ${state.lastSyn ? `<div class="sub">${fmtDate(state.lastSyn.created_at)} · ${state.lastSyn.nb_reves} rêves</div>` : ''}
           </span>
           <span class="chev"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg></span>
         </button>
