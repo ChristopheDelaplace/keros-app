@@ -235,7 +235,9 @@
 <script>
 const SUPABASE_URL = "https://lyeoanwpxjbuhnwoceeb.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx5ZW9hbndweGpidWhud29jZWViIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAwODgzMDcsImV4cCI6MjEwNTY2NDMwN30.D4mVV081nDWRx-By0y7HjQsY5UpSSkwz0nzzw9uTnQU";
-const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// Capturé AVANT que supabase-js n'efface le hash de l'URL (lien « mot de passe oublié »)
+const RECOVERY_AT_LOAD = /(^|[#&?])type=recovery/.test(location.hash + location.search);
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { flowType: 'implicit' } });
 
 const GLYPH = (size, opacity) => `<svg class="glyph-icon" width="${size}" height="${size}" viewBox="0 0 100 100" fill="none" style="opacity:${opacity ?? 1}"><path d="M 42 14 L 42 58 L 20 58" stroke="currentColor" stroke-width="7" stroke-linecap="square" stroke-linejoin="miter" fill="none"/><path d="M 58 14 L 58 58 L 80 58" stroke="currentColor" stroke-width="7" stroke-linecap="square" stroke-linejoin="miter" fill="none"/></svg>`;
 
@@ -270,14 +272,14 @@ function fmtDate(d) {
 
 // ---------- AUTH ----------
 async function init() {
-  const { data } = await sb.auth.getSession();
-  state.session = data.session;
-  if (location.hash.includes('type=recovery')) state.recovery = true;
+  if (RECOVERY_AT_LOAD) state.recovery = true;
   sb.auth.onAuthStateChange((_event, session) => {
     state.session = session;
     if (_event === 'PASSWORD_RECOVERY') { state.recovery = true; state.view = 'reset'; render(); return; }
     if (session) { loadProfileAndGo(); } else { state.view = 'auth'; render(); }
   });
+  const { data } = await sb.auth.getSession();
+  state.session = data.session;
   if (state.session) { await loadProfileAndGo(); } else { state.view = 'auth'; render(); }
 }
 
