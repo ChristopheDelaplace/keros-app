@@ -201,7 +201,6 @@
   .syn-card .gl { color: var(--accent); flex-shrink: 0; display: flex; }
   .syn-card .meta { flex: 1; min-width: 0; }
   .syn-card .name { font-family: 'Fraunces', serif; font-size: 15px; }
-  .syn-card .sub { font-size: 11px; color: var(--ink-soft); margin-top: 2px; }
   .syn-card .chev { color: var(--accent); flex-shrink: 0; }
   .journal-row { display: flex; align-items: center; gap: 12px; background: var(--card-2); border-radius: 12px; padding: 12px 14px; cursor: pointer; text-align: left; border: none; width: 100%; font-family: inherit; color: var(--ink); }
   .journal-row .num { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--ink-faint); flex-shrink: 0; width: 32px; }
@@ -912,11 +911,6 @@ function renderJournalLoading() {
 }
 
 function renderJournal() {
-  const n = state.journal.length;
-  const isPremium = state.profile && state.profile.tier === 'premium';
-  const synthSub = !isPremium ? 'Vos rêves, vus ensemble · Premium'
-    : n >= SYNTHESE_MIN ? `Vos ${n} rêves, vus ensemble`
-    : `Disponible dès ${SYNTHESE_MIN} rêves (${n}/${SYNTHESE_MIN})`;
   h(`
     ${topNav(false)}
     <div class="view rest-view">
@@ -927,7 +921,6 @@ function renderJournal() {
           <span class="gl">${GLYPH(24)}</span>
           <span class="meta">
             <div class="name">Synthèse</div>
-            <div class="sub">${synthSub}</div>
           </span>
           <span class="chev"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg></span>
         </button>
