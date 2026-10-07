@@ -97,7 +97,7 @@
   .view.rest-view .loading-block { flex: 1; justify-content: flex-start; padding-top: 36px; }
   .field { display: flex; flex-direction: column; gap: 6px; text-align: left; }
   .field label { font-size: 11px; font-family: 'IBM Plex Mono', monospace; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-faint); }
-  .field input, .field textarea {
+  .field input, .field textarea, .field select {
     border: 1px solid var(--line); border-radius: 10px; background: var(--card);
     color: var(--ink); padding: 11px 12px; font-family: 'Work Sans', sans-serif; font-size: 14px;
   }
@@ -284,6 +284,7 @@ function renderAuth() {
         <div id="auth-msg"></div>
         <form id="auth-form" class="auth-box" style="gap:9px;">
           ${isSignup ? `<div class="field"><label>Prénom</label><input type="text" id="auth-prenom" required autocomplete="given-name"></div>` : ''}
+          ${isSignup ? `<div class="field"><label>Genre <span style="opacity:.6">(optionnel)</span></label><select id="auth-genre"><option value="">Je préfère ne pas dire</option><option value="femme">Femme</option><option value="homme">Homme</option><option value="autre">Autre</option></select></div>` : ''}
           <div class="field"><label>Email</label><input type="email" id="auth-email" required autocomplete="email"></div>
           <div class="field"><label>Mot de passe</label><input type="password" id="auth-password" required minlength="6" autocomplete="${isSignup ? 'new-password' : 'current-password'}"></div>
           <button type="submit" class="btn btn-primary btn-block" id="auth-submit">${isSignup ? "S'inscrire" : "Se connecter"}</button>
@@ -305,7 +306,8 @@ function renderAuth() {
     try {
       if (isSignup) {
         const prenom = $('#auth-prenom')?.value.trim();
-        const { error } = await sb.auth.signUp({ email, password, options: { data: { prenom } } });
+        const genre = $('#auth-genre')?.value || '';
+        const { error } = await sb.auth.signUp({ email, password, options: { data: { prenom, genre } } });
         if (error) throw error;
         msgEl.innerHTML = `<div class="msg ok">Compte créé. Si la confirmation par email est activée, vérifiez votre boîte avant de vous connecter.</div>`;
         state.authMode = 'signin';
@@ -710,6 +712,7 @@ async function runRestitution(contexte) {
         mots_cles: state.keywords,
         contexte: contexte,
         niveau: (state.profile && state.profile.tier) || 'standard',
+        genre: state.session?.user?.user_metadata?.genre || '',
       },
     });
     if (error) throw error;
