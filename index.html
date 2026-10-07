@@ -216,6 +216,9 @@
   .legal-body ul { padding-left: 18px; }
   .legal-body .todo { background: var(--rose-soft); color: var(--rose); border-radius: 4px; padding: 0 4px; }
   .legal-body .stamp { font-size: 11.5px; color: var(--ink-faint); }
+  .syn-meta { font-size: 11.5px; color: var(--ink-faint); margin: 0 0 14px; text-align: center; }
+  .syn-refs { font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; color: var(--ink-faint); letter-spacing: 0.04em; margin-left: 6px; text-transform: none; font-weight: 400; }
+  .syn-list { margin: 0; padding-left: 18px; font-size: 14px; line-height: 1.6; }
   .danger-link { background: none; border: none; color: var(--danger); font-size: 12.5px; cursor: pointer; font-family: 'Work Sans', sans-serif; text-decoration: underline; padding: 6px; }
   .account-section { margin-top: 18px; display: flex; flex-direction: column; gap: 10px; text-align: left; }
   .account-section .row { display: flex; flex-direction: column; gap: 6px; }
@@ -924,12 +927,13 @@ function renderJournal() {
       <div class="footer-actions">
         <button class="btn btn-primary btn-block" id="journal-new">Raconter un nouveau rêve</button>
       </div>
-      <div class="legal-links"><a id="go-compte">Mon compte</a><a data-legal="confidentialite">Confidentialité</a></div>
+      <div class="legal-links"><a id="go-synthese">Synthèse</a><a id="go-compte">Mon compte</a><a data-legal="confidentialite">Confidentialité</a></div>
     </div>
   `);
   bindTopNav();
   bindLegalLinks('journal');
   $('#go-compte').onclick = () => { state.view = 'compte'; render(); };
+  $('#go-synthese').onclick = () => { state.view = 'synthese'; render(); };
   $('#journal-new').onclick = () => { state.view = 'recueil'; state.recit = ''; state.reve = null; render(); };
   root.querySelectorAll('.journal-row').forEach(btn => {
     btn.onclick = () => {
@@ -939,6 +943,81 @@ function renderJournal() {
       render();
     };
   });
+}
+
+// ---------- SYNTHÈSE ----------
+const SYNTHESE_MIN = 5;
+function refsHtml(arr) {
+  return (arr && arr.length) ? `<span class="syn-refs">${arr.map(n => '#' + escapeHtml(n)).join(' ')}</span>` : '';
+}
+function syntheseBodyHtml(c) {
+  const blocks = [];
+  blocks.push(`<div class="rest-block"><h3>Fil rouge</h3><p>${escapeHtml(c.apercu)}</p></div>`);
+  (c.figures || []).forEach(f => blocks.push(`<div class="rest-block"><h3>${escapeHtml(f.figure)}${refsHtml(f.reves)}</h3><p>${escapeHtml(f.lecture)}</p></div>`));
+  (c.motifs || []).forEach(m => blocks.push(`<div class="rest-block"><h3>${escapeHtml(m.motif)}${refsHtml(m.reves)}</h3><p>${escapeHtml(m.lecture)}</p></div>`));
+  if (c.evolution) blocks.push(`<div class="rest-block"><h3>Ce qui évolue</h3><p>${escapeHtml(c.evolution)}</p></div>`);
+  if ((c.pistes || []).length) blocks.push(`<div class="rest-block"><h3>Pistes à explorer</h3><ul class="syn-list">${c.pistes.map(p => `<li>${escapeHtml(p)}</li>`).join('')}</ul></div>`);
+  return blocks.join('');
+}
+
+async function renderSynthese() {
+  const isPremium = state.profile && state.profile.tier === 'premium';
+  h(`
+    ${topNav(true)}
+    <div class="view rest-view">
+      <div class="auth-image"><img src="mykeros-figure-cutout.png" alt=""></div>
+      <div class="journal-title display">Synthèse</div>
+      <div id="syn-body"><div class="loading-block"><div class="spinner"></div></div></div>
+    </div>
+  `);
+  bindTopNav();
+  const body = $('#syn-body');
+
+  if (!isPremium) {
+    body.innerHTML = `
+      <div class="rest-block"><p>La synthèse croise l'ensemble de vos rêves : fil rouge, figures qui reviennent, motifs, évolution dans le temps.</p></div>
+      <div class="premium-cta">
+        <span class="txt">Disponible avec Premium, à partir de ${SYNTHESE_MIN} rêves.</span>
+        <button class="btn btn-primary" id="syn-premium">Bientôt</button>
+      </div>`;
+    $('#syn-premium').onclick = () => alert('Le paiement Premium arrive bientôt.');
+    return;
+  }
+
+  const uid = state.session.user.id;
+  const [{ count }, { data: last }] = await Promise.all([
+    sb.from('reves').select('id', { count: 'exact', head: true }).eq('user_id', uid),
+    sb.from('syntheses').select('id, created_at, nb_reves, contenu').eq('user_id', uid).order('created_at', { ascending: false }).limit(1),
+  ]);
+  const nb = count || 0;
+  const current = last && last[0];
+
+  const draw = (syn) => {
+    const enough = nb >= SYNTHESE_MIN;
+    body.innerHTML = `
+      <div id="syn-msg"></div>
+      ${syn ? `<p class="syn-meta">Générée le ${fmtDate(syn.created_at)} · ${syn.nb_reves} rêves</p>${syntheseBodyHtml(syn.contenu)}` : ''}
+      ${!enough ? `<div class="journal-empty" style="margin-top:20px">Il faut au moins ${SYNTHESE_MIN} rêves pour une synthèse. Vous en avez ${nb}.</div>` : `
+        <div class="footer-actions"><button class="btn ${syn ? 'btn-ghost' : 'btn-primary'} btn-block" id="syn-go">${syn ? 'Actualiser la synthèse' : 'Générer la synthèse'}</button></div>`}
+    `;
+    const go = $('#syn-go');
+    if (go) go.onclick = async () => {
+      go.disabled = true; go.textContent = 'On lit vos rêves… (environ une minute)';
+      const { data, error } = await sb.functions.invoke('synthese', { body: {} });
+      if (error || !data || !data.contenu) {
+        let detail = '';
+        try { const j = await error.context.json(); detail = j.error || ''; } catch (_) {}
+        draw(syn);
+        const msg = detail === 'premium_requis' ? 'La synthèse est réservée aux comptes Premium.'
+          : detail === 'pas_assez_de_reves' ? `Il faut au moins ${SYNTHESE_MIN} rêves.`
+          : 'La synthèse n\'a pas pu être générée. Réessayez dans un instant.';
+        $('#syn-msg').innerHTML = `<div class="msg error" style="margin-bottom:12px">${escapeHtml(msg)}</div>`;
+        return;
+      }
+      draw(data);
+    };
+  };
+  draw(current);
 }
 
 // ---------- COMPTE ----------
@@ -1042,6 +1121,7 @@ function render() {
     case 'auth': return renderAuth();
     case 'reset': return renderReset();
     case 'compte': return renderCompte();
+    case 'synthese': return renderSynthese();
     case 'legal': return renderLegal();
     case 'recueil': return renderRecueil();
     case 'sentiment': return renderSentiment();
