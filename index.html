@@ -89,9 +89,12 @@
   .auth-image img { width: 100%; height: auto; display: block; }
   #auth-form { margin-top: 44px; }
   #auth-toggle { margin-top: 6px; }
-  .view.rest-view { padding-top: 57px; }
+  .view.rest-view { padding-top: 57px; padding-bottom: 46px; }
   .view.rest-view .rest-header { margin-top: 20px; }
   .view.rest-view .step-title { margin-top: 20px; }
+  .view.rest-view .journal-title { margin-top: 20px; text-align: center; }
+  .view.rest-view .progress-row { justify-content: center; padding: 16px 0 0; }
+  .view.rest-view .loading-block { flex: 1; justify-content: flex-start; padding-top: 36px; }
   .field { display: flex; flex-direction: column; gap: 6px; text-align: left; }
   .field label { font-size: 11px; font-family: 'IBM Plex Mono', monospace; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-faint); }
   .field input, .field textarea {
@@ -532,7 +535,8 @@ function renderSentiment() {
 function renderNom() {
   h(`
     ${topNav(true)}
-    <div class="view">
+    <div class="view rest-view">
+      <div class="auth-image"><img src="mykeros-figure-cutout.png" alt=""></div>
       <div class="step-title">Donnez un nom à ce rêve</div>
       <div class="step-card">
         <div class="a-label">Comme un titre, pour vous y retrouver</div>
@@ -581,10 +585,12 @@ async function startAssociations() {
 function renderExtracting() {
   h(`
     ${topNav(true)}
-    <div class="loading-block">
-      ${GLYPH(28)}
-      <div class="spinner"></div>
-      <div>On relit votre rêve pour en dégager les mots-clés…</div>
+    <div class="view rest-view">
+      <div class="auth-image"><img src="mykeros-figure-cutout.png" alt=""></div>
+      <div class="loading-block">
+        <div class="spinner"></div>
+        <div>On relit votre rêve pour en dégager les mots-clés…</div>
+      </div>
     </div>
   `);
   bindTopNav();
@@ -593,9 +599,12 @@ function renderExtracting() {
 function renderExtractError() {
   h(`
     ${topNav(true)}
-    <div class="loading-block">
-      <div class="msg error">L'extraction des mots-clés a échoué. Réessayer ?</div>
-      <button class="btn btn-primary" id="retry-extract">Réessayer</button>
+    <div class="view rest-view">
+      <div class="auth-image"><img src="mykeros-figure-cutout.png" alt=""></div>
+      <div class="loading-block">
+        <div class="msg error">L'extraction des mots-clés a échoué. Réessayer ?</div>
+        <button class="btn btn-primary" id="retry-extract">Réessayer</button>
+      </div>
     </div>
   `);
   bindTopNav();
@@ -610,8 +619,8 @@ function renderAssociations() {
   const dots = state.keywords.map((_, i) => `<span class="dot ${i < idx ? 'done' : i === idx ? 'now' : ''}"></span>`).join('');
   h(`
     ${topNav(true)}
-    <div class="kw-bg">${GLYPH(170, 1).replace('width="170" height="170"', 'width="100%" height="100%"')}</div>
-    <div class="view">
+    <div class="view rest-view">
+      <div class="auth-image"><img src="mykeros-figure-cutout.png" alt=""></div>
       <div class="progress-row"><div class="progress-dots">${dots}</div></div>
       <div class="step-title">Associations</div>
       <div class="kw-history">
@@ -668,7 +677,8 @@ function renderAssociations() {
 function renderContexte() {
   h(`
     ${topNav(true)}
-    <div class="view">
+    <div class="view rest-view">
+      <div class="auth-image"><img src="mykeros-figure-cutout.png" alt=""></div>
       <div class="step-title">Un dernier point</div>
       <div class="step-card">
         <div class="a-label">Quelque chose de notable ces dernières 24h, ou à venir dans les 72h ?</div>
@@ -716,10 +726,12 @@ async function runRestitution(contexte) {
 function renderRestituting() {
   h(`
     ${topNav(true)}
-    <div class="loading-block">
-      ${GLYPH(28)}
-      <div class="spinner"></div>
-      <div>Kéros prend le temps de relier les fils…</div>
+    <div class="view rest-view">
+      <div class="auth-image"><img src="mykeros-figure-cutout.png" alt=""></div>
+      <div class="loading-block">
+        <div class="spinner"></div>
+        <div>Kéros prend le temps de relier les fils…</div>
+      </div>
     </div>
   `);
   bindTopNav();
@@ -728,9 +740,12 @@ function renderRestituting() {
 function renderRestitutionError() {
   h(`
     ${topNav(true)}
-    <div class="loading-block">
-      <div class="msg error">La restitution a échoué. Réessayer ?</div>
-      <button class="btn btn-primary" id="retry-rest">Réessayer</button>
+    <div class="view rest-view">
+      <div class="auth-image"><img src="mykeros-figure-cutout.png" alt=""></div>
+      <div class="loading-block">
+        <div class="msg error">La restitution a échoué. Réessayer ?</div>
+        <button class="btn btn-primary" id="retry-rest">Réessayer</button>
+      </div>
     </div>
   `);
   bindTopNav();
@@ -781,14 +796,15 @@ async function goJournal() {
 }
 
 function renderJournalLoading() {
-  h(`${topNav(false)}<div class="loading-block">${GLYPH(28)}<div class="spinner"></div></div>`);
+  h(`${topNav(false)}<div class="view rest-view"><div class="auth-image"><img src="mykeros-figure-cutout.png" alt=""></div><div class="loading-block"><div class="spinner"></div></div></div>`);
   bindTopNav();
 }
 
 function renderJournal() {
   h(`
     ${topNav(false)}
-    <div class="view">
+    <div class="view rest-view">
+      <div class="auth-image"><img src="mykeros-figure-cutout.png" alt=""></div>
       <div class="journal-title display">Journal</div>
       ${state.journal.length === 0 ? `<div class="journal-empty">Aucun rêve consigné pour l'instant.</div>` : `
         <div class="journal-list">
