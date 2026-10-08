@@ -166,6 +166,7 @@
   .step-card .k-word { font-family: 'Fraunces', serif; font-size: 19px; margin: 4px 0 12px; }
   .step-card .a-label { font-size: 11px; font-weight: 600; color: var(--ink-soft); margin-bottom: 6px; }
   .chip-grid { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 16px; }
+  .chip-grid .chip { flex: 1 1 auto; text-align: center; padding-left: 10px; padding-right: 10px; }
   .chip { font-family: 'Work Sans', sans-serif; font-size: 13px; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--card); color: var(--ink); cursor: pointer; transition: opacity .15s; }
   .chip.selected { background: var(--accent); border-color: var(--accent); color: var(--card); }
   .chip:disabled { opacity: 0.35; cursor: default; }
@@ -227,6 +228,7 @@
   .check-row { display: flex; gap: 10px; align-items: flex-start; text-align: left; font-size: 11.5px; line-height: 1.45; color: var(--ink-soft); margin: 4px 0 2px; }
   .check-row input { margin-top: 2px; flex: none; width: 16px; height: 16px; accent-color: var(--accent); }
   .check-row a, .legal-links a, .legal-body a { color: var(--accent); text-decoration: underline; cursor: pointer; }
+  .legal-links.foot { margin-top: auto; padding-top: 26px; }
   .legal-links { display: flex; gap: 6px 12px; flex-wrap: wrap; justify-content: center; font-size: 11.5px; margin-top: 14px; color: var(--ink-faint); }
   .legal-body { text-align: left; font-size: 13px; line-height: 1.6; color: var(--ink); }
   .legal-body h3 { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-soft); margin: 18px 0 6px; }
@@ -346,8 +348,8 @@ function openLegal(doc, back) {
   }
   state.legalDoc = doc; state.legalBack = back; state.view = 'legal'; render();
 }
-function legalLinksHtml() {
-  return `<div class="legal-links"><a data-legal="confidentialite">Confidentialité</a><a data-legal="cgu">CGU</a></div>`;
+function legalLinksHtml(withAccount) {
+  return `<div class="legal-links foot">${withAccount ? '<a id="go-compte">Mon compte</a>' : ''}<a data-legal="confidentialite">Confidentialité</a><a data-legal="cgu">CGU</a></div>`;
 }
 function bindLegalLinks(back) {
   root.querySelectorAll('[data-legal]').forEach(a => { a.onclick = (e) => { e.preventDefault(); openLegal(a.dataset.legal, back); }; });
@@ -374,8 +376,8 @@ function renderAuth() {
         </form>
         <button class="link-btn" id="auth-toggle">${isSignup ? 'Déjà un compte ? Se connecter' : isForgot ? 'Retour à la connexion' : "Pas de compte ? S'inscrire"}</button>
         ${mode === 'signin' ? `<button class="link-btn" id="auth-forgot" style="margin-top:2px">Mot de passe oublié ?</button>` : ''}
-        ${legalLinksHtml()}
       </div>
+      ${legalLinksHtml()}
     </div>
   `);
   bindTopNav();
@@ -1102,7 +1104,7 @@ function renderJournal() {
         <button class="btn btn-primary btn-block" id="journal-new">Raconter un nouveau rêve</button>
       </div>
       <div style="text-align:center;margin-top:12px"><button class="link-btn" id="journal-avant">Ajouter un rêve d'avant mykeros</button></div>
-      <div class="legal-links"><a id="go-compte">Mon compte</a><a data-legal="confidentialite">Confidentialité</a></div>
+      ${legalLinksHtml(true)}
     </div>
   `);
   bindTopNav();
@@ -1320,7 +1322,7 @@ function render() {
 }
 
 // ---------- MISE À JOUR AUTOMATIQUE (app installée) ----------
-const APP_VERSION = '2026-10-08d';
+const APP_VERSION = '2026-10-08e';
 const SAFE_VIEWS = ['auth', 'journal', 'compte', 'synthese', 'legal', 'avant-ok', 'restitution'];
 async function checkUpdate() {
   if (location.protocol.indexOf('http') !== 0) return;
