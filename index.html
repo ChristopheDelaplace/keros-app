@@ -247,6 +247,7 @@
   .footer-glyph.on { pointer-events: auto; cursor: pointer; padding: 10px 24px; bottom: 2px; left: 50%; right: auto; transform: translateX(-50%); }
   .avant-date { display: grid; grid-template-columns: 1.1fr 1.5fr 1fr; gap: 8px; width: 100%; margin-top: 16px; text-align: left; }
   .rest-header .avm { display: inline-block; margin-bottom: 18px; }
+  .mirror-l { display: inline-block; transform: scaleX(-1); }
   .avm { font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; color: var(--rose); background: var(--rose-soft); padding: 2px 7px; border-radius: 999px; white-space: nowrap; }
   .avant-text { white-space: pre-wrap; line-height: 1.55; font-size: 14.5px; color: var(--ink); margin: 14px 0; }
   .footer-glyph { position: absolute; left: 0; right: 0; bottom: 12px; display: flex; justify-content: center; color: var(--accent); opacity: 0.55; pointer-events: none; z-index: 2; }
@@ -301,7 +302,7 @@ function fmtDate(d) {
   return dt.toLocaleDateString('fr-CH', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
-const AV_LABEL = 'av. ⅃L';
+const AV_LABEL = 'av. <span class="mirror-l">L</span>L'; // ⅃ = L en miroir, même police que le L
 function parseYMD(d) { const [y, m, dd] = String(d).split('-').map(Number); return { y, m, d: dd }; }
 function fmtDateR(r) {
   const { y, m, d } = parseYMD(r.date);
@@ -1058,7 +1059,7 @@ async function goJournal() {
     sb.from('syntheses').select('created_at, nb_reves').eq('user_id', uid).order('created_at', { ascending: false }).limit(1),
   ]);
   state.journal = error ? [] : data;
-  { // numérotation indépendante : av. ⅃L (1 = le plus ancien) et mykeros (#1 = le plus ancien)
+  { // numérotation indépendante : av. LL (L miroir) (1 = le plus ancien) et mykeros (#1 = le plus ancien)
     let nA = 0, nM = 0;
     [...state.journal].reverse().forEach(r => { r.rang = r.avant_m ? ++nA : ++nM; });
   }
@@ -1322,7 +1323,7 @@ function render() {
 }
 
 // ---------- MISE À JOUR AUTOMATIQUE (app installée) ----------
-const APP_VERSION = '2026-10-08e';
+const APP_VERSION = '2026-10-08f';
 const SAFE_VIEWS = ['auth', 'journal', 'compte', 'synthese', 'legal', 'avant-ok', 'restitution'];
 async function checkUpdate() {
   if (location.protocol.indexOf('http') !== 0) return;
