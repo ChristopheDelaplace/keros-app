@@ -364,7 +364,7 @@ function openLegal(doc, back) {
   state.legalDoc = doc; state.legalBack = back; state.view = 'legal'; render();
 }
 function legalLinksHtml(withAccount) {
-  return `<div class="legal-links foot">${withAccount ? '<a id="go-compte">Mon compte</a>' : ''}<a data-legal="confidentialite">Confidentialité</a><a data-legal="cgu">CGU</a></div>`;
+  return `<div class="legal-links foot">${withAccount ? '<a id="go-compte">Mon compte</a>' : ''}<a data-legal="cgu">CGU</a><a data-legal="confidentialite">Confidentialité</a></div>`;
 }
 function bindLegalLinks(back) {
   root.querySelectorAll('[data-legal]').forEach(a => { a.onclick = (e) => { e.preventDefault(); openLegal(a.dataset.legal, back); }; });
@@ -1391,7 +1391,7 @@ function render() {
 }
 
 // ---------- MISE À JOUR AUTOMATIQUE (app installée) ----------
-const APP_VERSION = '2026-10-08h';
+const APP_VERSION = '2026-10-08i';
 const SAFE_VIEWS = ['auth', 'journal', 'compte', 'synthese', 'legal', 'avant-ok', 'restitution'];
 async function checkUpdate() {
   if (location.protocol.indexOf('http') !== 0) return;
