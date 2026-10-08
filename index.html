@@ -1276,6 +1276,21 @@ function render() {
   }
 }
 
+// ---------- MISE À JOUR AUTOMATIQUE (app installée) ----------
+const APP_VERSION = '2026-10-08a';
+const SAFE_VIEWS = ['auth', 'journal', 'compte', 'synthese', 'legal', 'avant-ok', 'restitution'];
+async function checkUpdate() {
+  if (location.protocol.indexOf('http') !== 0) return;
+  try {
+    const res = await fetch('index.html?v=' + Date.now(), { cache: 'no-store' });
+    const txt = await res.text();
+    const m = txt.match(/const APP_VERSION = '([^']+)'/);
+    if (m && m[1] !== APP_VERSION && SAFE_VIEWS.includes(state.view)) location.reload();
+  } catch (e) {}
+}
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') checkUpdate(); });
+setTimeout(checkUpdate, 3000);
+
 document.getElementById('footer-glyph').innerHTML = GLYPH(26);
 document.getElementById('footer-glyph').addEventListener('click', () => {
   if (state.session && GLYPH_HOME_VIEWS.includes(state.view)) goJournal();
