@@ -239,6 +239,16 @@
   .syn-meta { font-size: 11.5px; color: var(--ink-faint); margin: 0 0 14px; text-align: center; }
   .syn-refs { font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; color: var(--ink-faint); letter-spacing: 0.04em; margin-left: 6px; text-transform: none; font-weight: 400; }
   .syn-list { margin: 0; padding-left: 18px; font-size: 14px; line-height: 1.6; }
+  .piste-list { list-style: none; padding-left: 0; display: flex; flex-direction: column; gap: 14px; }
+  .piste-q { margin: 0; }
+  .piste-rep { margin-top: 8px; background: var(--card-2); border-left: 2px solid var(--accent); border-radius: 0 10px 10px 0; padding: 8px 12px; font-size: 13.5px; line-height: 1.55; white-space: pre-wrap; color: var(--ink-soft); }
+  .piste-actions { display: flex; gap: 4px; justify-content: flex-end; margin-top: 6px; }
+  .piste-actions .link-btn { padding: 4px 6px; font-size: 12.5px; }
+  .piste-edit { margin-top: 8px; }
+  .piste-edit textarea { width: 100%; min-height: 96px; resize: vertical; border: 1px solid var(--line); border-radius: 10px; background: var(--card); color: var(--ink); padding: 10px 12px; font-family: 'Work Sans', sans-serif; font-size: 14px; line-height: 1.5; box-sizing: border-box; }
+  .piste-edit .row { display: flex; gap: 8px; justify-content: flex-end; margin-top: 8px; }
+  .piste-edit .btn { padding: 8px 14px; font-size: 13px; }
+  .rest-block .piste-hint { font-size: 11.5px; color: var(--ink-faint); margin: 2px 0 12px; }
   .danger-link { background: none; border: none; color: var(--danger); font-size: 12.5px; cursor: pointer; font-family: 'Work Sans', sans-serif; text-decoration: underline; padding: 6px; }
   .account-section { margin-top: 18px; display: flex; flex-direction: column; gap: 10px; text-align: left; }
   .account-section .row { display: flex; flex-direction: column; gap: 6px; }
@@ -247,7 +257,7 @@
   .footer-glyph.on { pointer-events: auto; cursor: pointer; padding: 10px 24px; bottom: 2px; left: 50%; right: auto; transform: translateX(-50%); }
   .avant-date { display: grid; grid-template-columns: 1.1fr 1.5fr 1fr; gap: 8px; width: 100%; margin-top: 16px; text-align: left; }
   .rest-header .avm { display: inline-block; margin-bottom: 18px; }
-  .mirror-l { display: inline-block; transform: scaleX(-1); }
+  .glyph-inline { display: inline-block; height: 0.8em; width: auto; aspect-ratio: 68 / 52; vertical-align: -0.02em; overflow: visible; }
   .avm { font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; color: var(--rose); background: var(--rose-soft); padding: 2px 7px; border-radius: 999px; white-space: nowrap; }
   .avant-text { white-space: pre-wrap; line-height: 1.55; font-size: 14.5px; color: var(--ink); margin: 14px 0; }
   .footer-glyph { position: absolute; left: 0; right: 0; bottom: 12px; display: flex; justify-content: center; color: var(--accent); opacity: 0.55; pointer-events: none; z-index: 2; }
@@ -302,7 +312,11 @@ function fmtDate(d) {
   return dt.toLocaleDateString('fr-CH', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
-const AV_LABEL = 'av. <span class="mirror-l">L</span>L'; // ⅃ = L en miroir, même police que le L
+// Glyphe ⅃L dessiné comme le logo (mêmes traits, cadré serré) pour s'aligner sur le texte
+const GLYPH_INLINE = '<svg class="glyph-inline" viewBox="16 10 68 52" aria-label="⅃L" role="img"><path d="M 42 14 L 42 58 L 20 58 M 58 14 L 58 58 L 80 58" stroke="currentColor" stroke-width="8" stroke-linecap="square" stroke-linejoin="miter" fill="none"/></svg>';
+const AV_LABEL = 'av. ' + GLYPH_INLINE;
+// Le modèle cite les rêves anciens « av. ⅃L n » : on remplace les caractères par le glyphe du logo à l'affichage
+function fixGlyph(html) { return String(html).replace(/⅃L/g, GLYPH_INLINE); }
 function parseYMD(d) { const [y, m, dd] = String(d).split('-').map(Number); return { y, m, d: dd }; }
 function fmtDateR(r) {
   const { y, m, d } = parseYMD(r.date);
@@ -1129,14 +1143,58 @@ const SYNTHESE_MIN = 5;
 function refsHtml(arr) {
   return (arr && arr.length) ? `<span class="syn-refs">${arr.map(n => /^\d+$/.test(String(n)) ? '#' + escapeHtml(n) : escapeHtml(n)).join(' · ')}</span>` : '';
 }
-function syntheseBodyHtml(c) {
+function syntheseBodyHtml(c, synId, refl) {
   const blocks = [];
   blocks.push(`<div class="rest-block"><h3>Fil rouge</h3><p>${escapeHtml(c.apercu)}</p></div>`);
   (c.figures || []).forEach(f => blocks.push(`<div class="rest-block"><h3>${escapeHtml(f.figure)}${refsHtml(f.reves)}</h3><p>${escapeHtml(f.lecture)}</p></div>`));
   (c.motifs || []).forEach(m => blocks.push(`<div class="rest-block"><h3>${escapeHtml(m.motif)}${refsHtml(m.reves)}</h3><p>${escapeHtml(m.lecture)}</p></div>`));
   if (c.evolution) blocks.push(`<div class="rest-block"><h3>Ce qui évolue</h3><p>${escapeHtml(c.evolution)}</p></div>`);
-  if ((c.pistes || []).length) blocks.push(`<div class="rest-block"><h3>Pistes à explorer</h3><ul class="syn-list">${c.pistes.map(p => `<li>${escapeHtml(p)}</li>`).join('')}</ul></div>`);
-  return blocks.join('');
+  if ((c.pistes || []).length) blocks.push(`<div class="rest-block" id="syn-pistes"><h3>Pistes à explorer</h3>
+    ${synId ? `<p class="piste-hint">Vos réponses nourriront la prochaine synthèse.</p>` : ''}
+    <ul class="syn-list ${synId ? 'piste-list' : ''}">${c.pistes.map((p, i) => synId ? pisteHtml(p, i, refl && refl[p]) : `<li>${escapeHtml(p)}</li>`).join('')}</ul></div>`);
+  return fixGlyph(blocks.join(''));
+}
+function pisteHtml(p, i, rep) {
+  return `<li data-i="${i}">
+    <p class="piste-q">${escapeHtml(p)}</p>
+    ${rep ? `<div class="piste-rep">${escapeHtml(rep)}</div>
+      <div class="piste-actions"><button class="link-btn piste-open">Modifier</button></div>`
+      : `<div class="piste-actions"><button class="link-btn piste-open">Répondre</button></div>`}
+  </li>`;
+}
+// Réponses aux pistes : enregistrées dans « reflexions », relues par la synthèse suivante
+function bindPistes(syn, refl, redraw) {
+  const box = document.getElementById('syn-pistes');
+  if (!box) return;
+  const pistes = syn.contenu.pistes || [];
+  box.querySelectorAll('li[data-i]').forEach(li => {
+    const p = pistes[Number(li.dataset.i)];
+    const open = li.querySelector('.piste-open');
+    if (!open) return;
+    open.onclick = () => {
+      li.querySelector('.piste-actions').remove();
+      const old = li.querySelector('.piste-rep'); if (old) old.remove();
+      const ed = document.createElement('div');
+      ed.className = 'piste-edit';
+      ed.innerHTML = `<textarea maxlength="4000" placeholder="Ce que cette question éveille en vous…"></textarea>
+        <div class="row"><button class="btn btn-ghost piste-cancel">Annuler</button><button class="btn btn-primary piste-save">Enregistrer</button></div>`;
+      li.appendChild(ed);
+      const ta = ed.querySelector('textarea');
+      ta.value = refl[p] || '';
+      ta.focus();
+      ed.querySelector('.piste-cancel').onclick = redraw;
+      ed.querySelector('.piste-save').onclick = async (ev) => {
+        const btn = ev.currentTarget; btn.disabled = true; btn.textContent = 'Enregistrement…';
+        const txt = ta.value.trim();
+        const { error } = txt
+          ? await sb.from('reflexions').upsert({ synthese_id: syn.id, piste: p, reponse: txt, updated_at: new Date().toISOString() }, { onConflict: 'synthese_id,piste' })
+          : await sb.from('reflexions').delete().eq('synthese_id', syn.id).eq('piste', p);
+        if (error) { btn.disabled = false; btn.textContent = 'Réessayer'; return; }
+        if (txt) refl[p] = txt; else delete refl[p];
+        redraw();
+      };
+    };
+  });
 }
 
 async function renderSynthese() {
@@ -1170,15 +1228,24 @@ async function renderSynthese() {
   ]);
   const nb = count || 0;
   const current = last && last[0];
+  let refl = {};
+  const loadRefl = async (syn) => {
+    refl = {};
+    if (!syn) return;
+    const { data } = await sb.from('reflexions').select('piste, reponse').eq('synthese_id', syn.id);
+    (data || []).forEach(x => { refl[x.piste] = x.reponse; });
+  };
+  await loadRefl(current);
 
   const draw = (syn) => {
     const enough = nb >= SYNTHESE_MIN;
     body.innerHTML = `
       <div id="syn-msg"></div>
-      ${syn ? `<p class="syn-meta">Générée le ${fmtDate(syn.created_at)} · ${syn.nb_reves} rêves</p>${syntheseBodyHtml(syn.contenu)}` : ''}
+      ${syn ? `<p class="syn-meta">Générée le ${fmtDate(syn.created_at)} · ${syn.nb_reves} rêves</p>${syntheseBodyHtml(syn.contenu, syn.id, refl)}` : ''}
       ${!enough ? `<div class="journal-empty" style="margin-top:20px">Il faut au moins ${SYNTHESE_MIN} rêves pour une synthèse. Vous en avez ${nb}.</div>` : `
         <div class="footer-actions"><button class="btn ${syn ? 'btn-ghost' : 'btn-primary'} btn-block" id="syn-go">${syn ? 'Actualiser la synthèse' : 'Générer la synthèse'}</button></div>`}
     `;
+    if (syn) bindPistes(syn, refl, () => draw(syn));
     const go = $('#syn-go');
     if (go) go.onclick = async () => {
       go.disabled = true; go.textContent = 'On lit vos rêves… (environ une minute)';
@@ -1193,6 +1260,7 @@ async function renderSynthese() {
         $('#syn-msg').innerHTML = `<div class="msg error" style="margin-bottom:12px">${escapeHtml(msg)}</div>`;
         return;
       }
+      refl = {};
       draw(data);
     };
   };
@@ -1323,7 +1391,7 @@ function render() {
 }
 
 // ---------- MISE À JOUR AUTOMATIQUE (app installée) ----------
-const APP_VERSION = '2026-10-08f';
+const APP_VERSION = '2026-10-08g';
 const SAFE_VIEWS = ['auth', 'journal', 'compte', 'synthese', 'legal', 'avant-ok', 'restitution'];
 async function checkUpdate() {
   if (location.protocol.indexOf('http') !== 0) return;
