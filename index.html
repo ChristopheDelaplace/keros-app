@@ -215,7 +215,7 @@
   .syn-card .name { font-family: 'Fraunces', serif; font-size: 15px; }
   .syn-card .chev { color: var(--accent); flex-shrink: 0; }
   .journal-row { display: flex; align-items: center; gap: 12px; background: var(--card-2); border-radius: 12px; padding: 12px 14px; cursor: pointer; text-align: left; border: none; width: 100%; font-family: inherit; color: var(--ink); }
-  .journal-row .num { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--ink-faint); flex-shrink: 0; width: 32px; }
+  .journal-row .num { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--ink-faint); flex-shrink: 0; width: 40px; }
   .journal-row .meta { flex: 1; min-width: 0; }
   .journal-row .name { font-family: 'Fraunces', serif; font-size: 15px; }
   .journal-row .date { font-size: 11px; color: var(--ink-faint); margin-top: 2px; }
@@ -243,6 +243,7 @@
 
   .footer-glyph.on { pointer-events: auto; cursor: pointer; padding: 10px 24px; bottom: 2px; left: 50%; right: auto; transform: translateX(-50%); }
   .avant-date { display: grid; grid-template-columns: 1.1fr 1.5fr 1fr; gap: 8px; width: 100%; margin-top: 16px; text-align: left; }
+  .rest-header .avm { display: inline-block; margin-bottom: 18px; }
   .avm { font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; color: var(--rose); background: var(--rose-soft); padding: 2px 7px; border-radius: 999px; white-space: nowrap; }
   .avant-text { white-space: pre-wrap; line-height: 1.55; font-size: 14.5px; color: var(--ink); margin: 14px 0; }
   .footer-glyph { position: absolute; left: 0; right: 0; bottom: 12px; display: flex; justify-content: center; color: var(--accent); opacity: 0.55; pointer-events: none; z-index: 2; }
@@ -859,20 +860,26 @@ async function runRestitution(contexte) {
   state.view = 'restituting';
   render();
   try {
+    const ancien = !!state.reve.avant_m;
     const { data, error } = await sb.functions.invoke('restitution', {
       body: {
         recit: state.reve.transcription,
-        sentiment: state.reve.sentiment,
+        sentiment: ancien ? '' : state.reve.sentiment,
         nom: state.reve.nom,
-        mots_cles: state.keywords,
+        mots_cles: ancien ? [] : state.keywords,
         contexte: contexte,
         niveau: (state.profile && state.profile.tier) || 'standard',
         genre: state.session?.user?.user_metadata?.genre || '',
+        ancien: ancien,
+        date_label: ancien ? fmtDateR(state.reve) : '',
       },
     });
     if (error) throw error;
-    await sb.from('reves').update({ restitution: data }).eq('id', state.reve.id);
+    const upd = { restitution: data };
+    if (ancien && data && typeof data.titre === 'string' && data.titre.trim()) upd.nom = data.titre.trim().slice(0, 80);
+    await sb.from('reves').update(upd).eq('id', state.reve.id);
     state.reve.restitution = data;
+    if (upd.nom) state.reve.nom = upd.nom;
     state.view = 'restitution';
     render();
   } catch (err) {
@@ -935,16 +942,20 @@ function renderAvantRead(reve) {
       <div class="auth-image"><img src="mykeros-figure-cutout.png" alt=""></div>
       <div class="rest-header">
         <h2 class="rest-title display">${escapeHtml(fmtDateR(reve))}</h2>
-        <span class="avm">${AV_LABEL}</span>
+        <span class="avm">${AV_LABEL} ${reve.rang || ''}</span>
       </div>
       <div class="avant-text">${escapeHtml(reve.transcription || '')}</div>
-      <div class="rest-block"><p>Rêve d'avant mykeros : il n'a pas de lecture individuelle, mais il compte dans votre synthèse.</p></div>
-      <div class="footer-actions"><button class="btn btn-ghost btn-block" id="av-back">Retour au journal</button></div>
+      <div class="rest-block"><p>Rêve d'avant mykeros : il compte dans votre synthèse. Vous pouvez aussi demander une lecture de ce rêve seul, sans associations : elle restera prudente.</p></div>
+      <div class="footer-actions" style="flex-direction:column">
+        <button class="btn btn-primary btn-block" id="av-read">Obtenir une lecture</button>
+        <button class="btn btn-ghost btn-block" id="av-back">Retour au journal</button>
+      </div>
       <div style="text-align:center;margin-top:10px"><button class="danger-link" id="del-dream">Supprimer ce rêve</button></div>
     </div>
   `);
   bindTopNav();
   $('#av-back').onclick = goJournal;
+  $('#av-read').onclick = () => { state.reve = reve; runRestitution(reve.contexte || ''); };
   $('#del-dream').onclick = async () => {
     if (!confirm('Supprimer définitivement ce rêve ?')) return;
     const { error } = await sb.from('reves').delete().eq('id', reve.id);
@@ -963,7 +974,7 @@ function renderRestitution(reve) {
       <div class="auth-image"><img src="mykeros-figure-cutout.png" alt=""></div>
       <div class="rest-header">
         <h2 class="rest-title display">${escapeHtml(reve.nom || 'Sans titre')}</h2>
-        <span class="rest-tag">◐ ${escapeHtml(reve.sentiment || '')}</span>
+        ${reve.avant_m ? `<span class="avm">${AV_LABEL} ${reve.rang || ''} · ${escapeHtml(fmtDateR(reve))}</span>` : `<span class="rest-tag">◐ ${escapeHtml(reve.sentiment || '')}</span>`}
       </div>
       ${r.motif_recurrent && r.motif_recurrent.present ? `
         <div class="motif-card"><span class="t">${escapeHtml(r.motif_recurrent.texte)}</span></div>
@@ -1016,7 +1027,10 @@ async function goJournal() {
     sb.from('syntheses').select('created_at, nb_reves').eq('user_id', uid).order('created_at', { ascending: false }).limit(1),
   ]);
   state.journal = error ? [] : data;
-  state.journal.forEach((r, i) => { r.rang = state.journal.length - i; });
+  { // numérotation indépendante : av. ⅃L (1 = le plus ancien) et mykeros (#1 = le plus ancien)
+    let nA = 0, nM = 0;
+    [...state.journal].reverse().forEach(r => { r.rang = r.avant_m ? ++nA : ++nM; });
+  }
   state.avantM = false;
   state.lastSyn = (syn && syn[0]) || null;
   state.view = 'journal';
@@ -1046,7 +1060,7 @@ function renderJournal() {
         <div class="journal-list">
           ${state.journal.map(r => `
             <button class="journal-row" data-id="${r.id}">
-              <span class="num">#${r.rang}</span>
+              <span class="num">${r.avant_m ? 'av.' + r.rang : '#' + r.rang}</span>
               <span class="meta">
                 <div class="name">${escapeHtml(r.nom || (r.avant_m ? excerpt(r.transcription, 7) : 'Sans titre'))}</div>
                 <div class="date">${fmtDateR(r)}${r.avant_m ? ` · <span class="avm">${AV_LABEL}</span>` : (r.sentiment ? ' · ' + escapeHtml(r.sentiment) : '')}</div>
@@ -1081,7 +1095,7 @@ function renderJournal() {
 // ---------- SYNTHÈSE ----------
 const SYNTHESE_MIN = 5;
 function refsHtml(arr) {
-  return (arr && arr.length) ? `<span class="syn-refs">${arr.map(n => '#' + escapeHtml(n)).join(' ')}</span>` : '';
+  return (arr && arr.length) ? `<span class="syn-refs">${arr.map(n => /^\d+$/.test(String(n)) ? '#' + escapeHtml(n) : escapeHtml(n)).join(' · ')}</span>` : '';
 }
 function syntheseBodyHtml(c) {
   const blocks = [];
@@ -1277,7 +1291,7 @@ function render() {
 }
 
 // ---------- MISE À JOUR AUTOMATIQUE (app installée) ----------
-const APP_VERSION = '2026-10-08a';
+const APP_VERSION = '2026-10-08b';
 const SAFE_VIEWS = ['auth', 'journal', 'compte', 'synthese', 'legal', 'avant-ok', 'restitution'];
 async function checkUpdate() {
   if (location.protocol.indexOf('http') !== 0) return;
