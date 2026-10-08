@@ -138,6 +138,8 @@
   .recueil .mic-content { margin-top: 45px; width: 100%; display: flex; flex-direction: column; align-items: center; }
   .recueil .mic-wrap { margin-top: 22px; width: 116px; height: 116px; }
   .recueil .mic-bottom { margin-top: 0; width: 100%; }
+  .recueil.avant .recueil-image { display: none; }
+  .recueil.avant .mic-content { margin-top: 28px; }
   .recueil-image { width: 111px; margin: 0 auto; }
   .recueil-image img { width: 100%; height: auto; display: block; }
   .greet { color: var(--ink-faint); font-size: 13px; margin-bottom: 2px; }
@@ -239,6 +241,10 @@
   .account-section .row { display: flex; flex-direction: column; gap: 6px; }
   .account-section .mail { font-size: 13px; color: var(--ink-soft); }
 
+  .footer-glyph.on { pointer-events: auto; cursor: pointer; padding: 10px 24px; bottom: 2px; left: 50%; right: auto; transform: translateX(-50%); }
+  .avant-date { display: grid; grid-template-columns: 1.1fr 1.5fr 1fr; gap: 8px; width: 100%; margin-top: 16px; text-align: left; }
+  .avm { font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; color: var(--rose); background: var(--rose-soft); padding: 2px 7px; border-radius: 999px; white-space: nowrap; }
+  .avant-text { white-space: pre-wrap; line-height: 1.55; font-size: 14.5px; color: var(--ink); margin: 14px 0; }
   .footer-glyph { position: absolute; left: 0; right: 0; bottom: 12px; display: flex; justify-content: center; color: var(--accent); opacity: 0.55; pointer-events: none; z-index: 2; }
   .footer-actions .btn { flex: 1; }
 </style>
@@ -274,6 +280,8 @@ let state = {
   recovery: false,
   legalDoc: 'confidentialite',
   legalBack: 'auth',
+  avantM: false,
+  avantDate: { y: '', m: '', d: '' },
 };
 
 const root = document.getElementById('app-root');
@@ -287,6 +295,19 @@ function escapeHtml(s) {
 function fmtDate(d) {
   const dt = new Date(d);
   return dt.toLocaleDateString('fr-CH', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+const AV_LABEL = 'av. ⅃L';
+function parseYMD(d) { const [y, m, dd] = String(d).split('-').map(Number); return { y, m, d: dd }; }
+function fmtDateR(r) {
+  const { y, m, d } = parseYMD(r.date);
+  if (r.date_precision === 'annee') return String(y);
+  if (r.date_precision === 'mois') return new Date(y, m - 1, 1).toLocaleDateString('fr-CH', { month: 'long', year: 'numeric' });
+  return new Date(y, m - 1, d).toLocaleDateString('fr-CH', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+function excerpt(t, n) {
+  const w = String(t || '').trim().split(/\s+/);
+  return w.length <= n ? w.join(' ') : w.slice(0, n).join(' ') + '…';
 }
 
 // ---------- AUTH ----------
@@ -451,12 +472,17 @@ function renderRecueil() {
   const first = prenom || (state.profile?.email || '').split('@')[0];
   h(`
     ${topNav(true)}
-    <div class="view recueil">
+    <div class="view recueil${state.avantM ? ' avant' : ''}">
       <div class="recueil-image"><img src="mykeros-figure-cutout.png" alt=""></div>
       <div class="mic-content">
         <div>
           <div class="greet">${escapeHtml(first)}</div>
-          <div class="prompt display">Racontez votre rêve,<br>là, tout de suite.</div>
+          <div class="prompt display">${state.avantM ? 'Un rêve d\'avant mykeros,<br>tel que vous vous en souvenez.' : 'Racontez votre rêve,<br>là, tout de suite.'}</div>
+          ${state.avantM ? `<div class="avant-date">
+            <div class="field"><label for="av-y">Année</label><input id="av-y" type="number" inputmode="numeric" min="1900" max="${new Date().getFullYear()}" placeholder="ex. 1998" value="${escapeHtml(state.avantDate.y)}"></div>
+            <div class="field"><label for="av-m">Mois</label><select id="av-m"><option value="">Inconnu</option>${['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'].map((n, i) => `<option value="${i + 1}"${String(state.avantDate.m) === String(i + 1) ? ' selected' : ''}>${n}</option>`).join('')}</select></div>
+            <div class="field"><label for="av-d">Jour</label><select id="av-d"><option value="">—</option>${Array.from({ length: 31 }, (_, i) => `<option value="${i + 1}"${String(state.avantDate.d) === String(i + 1) ? ' selected' : ''}>${i + 1}</option>`).join('')}</select></div>
+          </div>` : ''}
         </div>
         <div class="mic-wrap">
           <div class="mic-ring" id="ring1"></div>
@@ -471,7 +497,7 @@ function renderRecueil() {
           <p class="mic-hint" id="mic-hint">Parlez comme si vous y étiez encore. On transcrit pendant que le rêve est frais.</p>
           <button class="text-toggle" id="text-toggle" style="margin-top:14px;">Écrire plutôt</button>
           <div class="footer-actions" id="recueil-actions" style="display:none;">
-            <button class="btn btn-primary btn-block" id="recueil-continue">Continuer →</button>
+            <button class="btn btn-primary btn-block" id="recueil-continue">${state.avantM ? 'Enregistrer' : 'Continuer →'}</button>
           </div>
         </div>
       </div>
@@ -483,7 +509,12 @@ function renderRecueil() {
   const recitArea = $('#recit-area');
   const actions = $('#recueil-actions');
   const micHint = $('#mic-hint');
-  const defaultHint = 'Parlez comme si vous y étiez encore. On transcrit pendant que le rêve est frais.';
+  const defaultHint = state.avantM ? 'Une date approximative suffit : seule l\'année est nécessaire.' : 'Parlez comme si vous y étiez encore. On transcrit pendant que le rêve est frais.';
+  micHint.textContent = defaultHint;
+  if (state.avantM) {
+    const sync = () => { state.avantDate = { y: $('#av-y').value, m: $('#av-m').value, d: $('#av-d').value }; };
+    ['#av-y', '#av-m', '#av-d'].forEach(id => $(id).addEventListener('input', sync));
+  }
 
   function showTextArea(prefill) {
     recitArea.innerHTML = `<textarea class="kw-input recit-textarea" id="recit-text" placeholder="Racontez ce dont vous vous souvenez…">${escapeHtml(prefill || '')}</textarea>`;
@@ -552,6 +583,31 @@ function renderRecueil() {
 
   $('#recueil-continue').onclick = async () => {
     if (!state.recit) return;
+    if (state.avantM) {
+      const y = parseInt(state.avantDate.y, 10), m = parseInt(state.avantDate.m, 10) || 0, d = parseInt(state.avantDate.d, 10) || 0;
+      const now = new Date();
+      let err = '';
+      if (!y || y < 1900 || y > now.getFullYear()) err = 'Indiquez l\'année du rêve (entre 1900 et aujourd\'hui).';
+      else if (d && !m) err = 'Indiquez aussi le mois, ou retirez le jour.';
+      else if (m && d && new Date(y, m - 1, d).getMonth() !== m - 1) err = 'Cette date n\'existe pas.';
+      else if (new Date(y, (m || 1) - 1, d || 1) > now) err = 'Ce rêve ne peut pas être dans le futur.';
+      if (err) { micHint.textContent = err; return; }
+      const btn2 = $('#recueil-continue');
+      btn2.disabled = true; btn2.textContent = 'Un instant…';
+      const mm = String(m || 1).padStart(2, '0'), dd = String(d || 1).padStart(2, '0');
+      const { error } = await sb.from('reves').insert({
+        user_id: state.session.user.id,
+        transcription: state.recit,
+        date: `${y}-${mm}-${dd}`,
+        date_precision: d ? 'jour' : (m ? 'mois' : 'annee'),
+        avant_m: true,
+      });
+      if (error) { alert('Erreur à l\'enregistrement du rêve : ' + (error.message || error)); btn2.disabled = false; btn2.textContent = 'Enregistrer'; return; }
+      state.recit = '';
+      state.view = 'avant-ok';
+      render();
+      return;
+    }
     const btn = $('#recueil-continue');
     btn.disabled = true; btn.textContent = 'Un instant…';
     try {
@@ -854,7 +910,51 @@ function renderRestitutionError() {
   $('#retry-rest').onclick = () => runRestitution(state.reve.contexte);
 }
 
+function renderAvantOk() {
+  h(`
+    ${topNav(true)}
+    <div class="view rest-view">
+      <div class="auth-image"><img src="mykeros-figure-cutout.png" alt=""></div>
+      <div class="step-title">Rêve ajouté</div>
+      <div class="rest-block"><p>Il est classé à sa date dans votre journal (${AV_LABEL}) et comptera dans vos synthèses.</p></div>
+      <div class="footer-actions" style="flex-direction:column">
+        <button class="btn btn-primary btn-block" id="av-more">Ajouter un autre rêve d'avant mykeros</button>
+        <button class="btn btn-ghost btn-block" id="av-journal">Voir le journal</button>
+      </div>
+    </div>
+  `);
+  bindTopNav();
+  $('#av-more').onclick = () => { state.avantM = true; state.avantDate = { y: '', m: '', d: '' }; state.recit = ''; state.view = 'recueil'; render(); };
+  $('#av-journal').onclick = goJournal;
+}
+
+function renderAvantRead(reve) {
+  h(`
+    ${topNav(true)}
+    <div class="view rest-view">
+      <div class="auth-image"><img src="mykeros-figure-cutout.png" alt=""></div>
+      <div class="rest-header">
+        <h2 class="rest-title display">${escapeHtml(fmtDateR(reve))}</h2>
+        <span class="avm">${AV_LABEL}</span>
+      </div>
+      <div class="avant-text">${escapeHtml(reve.transcription || '')}</div>
+      <div class="rest-block"><p>Rêve d'avant mykeros : il n'a pas de lecture individuelle, mais il compte dans votre synthèse.</p></div>
+      <div class="footer-actions"><button class="btn btn-ghost btn-block" id="av-back">Retour au journal</button></div>
+      <div style="text-align:center;margin-top:10px"><button class="danger-link" id="del-dream">Supprimer ce rêve</button></div>
+    </div>
+  `);
+  bindTopNav();
+  $('#av-back').onclick = goJournal;
+  $('#del-dream').onclick = async () => {
+    if (!confirm('Supprimer définitivement ce rêve ?')) return;
+    const { error } = await sb.from('reves').delete().eq('id', reve.id);
+    if (error) { alert('Suppression impossible : ' + error.message); return; }
+    await goJournal();
+  };
+}
+
 function renderRestitution(reve) {
+  if (reve.avant_m && !reve.restitution) return renderAvantRead(reve);
   const r = reve.restitution || { sections: [], motif_recurrent: { present: false } };
   const isStandard = (state.profile && state.profile.tier) !== 'premium';
   h(`
@@ -895,7 +995,7 @@ function renderRestitution(reve) {
     if (error) { alert('Suppression impossible : ' + error.message); dd.disabled = false; return; }
     await goJournal();
   };
-  $('#new-dream').onclick = () => { state.view = 'recueil'; state.recit = ''; state.reve = null; render(); };
+  $('#new-dream').onclick = () => { state.avantM = false; state.view = 'recueil'; state.recit = ''; state.reve = null; render(); };
   const re = $('#retry-empty');
   if (re) re.onclick = async () => {
     re.disabled = true; re.textContent = 'On y réfléchit…';
@@ -912,10 +1012,12 @@ async function goJournal() {
   render();
   const uid = state.session.user.id;
   const [{ data, error }, { data: syn }] = await Promise.all([
-    sb.from('reves').select('*').eq('user_id', uid).order('numero', { ascending: false }),
+    sb.from('reves').select('*').eq('user_id', uid).order('date', { ascending: false }).order('created_at', { ascending: false }),
     sb.from('syntheses').select('created_at, nb_reves').eq('user_id', uid).order('created_at', { ascending: false }).limit(1),
   ]);
   state.journal = error ? [] : data;
+  state.journal.forEach((r, i) => { r.rang = state.journal.length - i; });
+  state.avantM = false;
   state.lastSyn = (syn && syn[0]) || null;
   state.view = 'journal';
   render();
@@ -944,10 +1046,10 @@ function renderJournal() {
         <div class="journal-list">
           ${state.journal.map(r => `
             <button class="journal-row" data-id="${r.id}">
-              <span class="num">#${r.numero}</span>
+              <span class="num">#${r.rang}</span>
               <span class="meta">
-                <div class="name">${escapeHtml(r.nom || 'Sans titre')}</div>
-                <div class="date">${fmtDate(r.date)}${r.sentiment ? ' · ' + escapeHtml(r.sentiment) : ''}</div>
+                <div class="name">${escapeHtml(r.nom || (r.avant_m ? excerpt(r.transcription, 7) : 'Sans titre'))}</div>
+                <div class="date">${fmtDateR(r)}${r.avant_m ? ` · <span class="avm">${AV_LABEL}</span>` : (r.sentiment ? ' · ' + escapeHtml(r.sentiment) : '')}</div>
               </span>
             </button>
           `).join('')}
@@ -956,6 +1058,7 @@ function renderJournal() {
       <div class="footer-actions">
         <button class="btn btn-primary btn-block" id="journal-new">Raconter un nouveau rêve</button>
       </div>
+      <div style="text-align:center;margin-top:12px"><button class="link-btn" id="journal-avant">Ajouter un rêve d'avant mykeros</button></div>
       <div class="legal-links"><a id="go-compte">Mon compte</a><a data-legal="confidentialite">Confidentialité</a></div>
     </div>
   `);
@@ -963,7 +1066,8 @@ function renderJournal() {
   bindLegalLinks('journal');
   $('#go-compte').onclick = () => { state.view = 'compte'; render(); };
   const gs = $('#go-synthese'); if (gs) gs.onclick = () => { state.view = 'synthese'; render(); };
-  $('#journal-new').onclick = () => { state.view = 'recueil'; state.recit = ''; state.reve = null; render(); };
+  $('#journal-avant').onclick = () => { state.avantM = true; state.avantDate = { y: '', m: '', d: '' }; state.recit = ''; state.reve = null; state.view = 'recueil'; render(); };
+  $('#journal-new').onclick = () => { state.avantM = false; state.view = 'recueil'; state.recit = ''; state.reve = null; render(); };
   root.querySelectorAll('.journal-row').forEach(btn => {
     btn.onclick = () => {
       const reve = state.journal.find(r => r.id === btn.dataset.id);
@@ -1145,7 +1249,10 @@ function renderLegal() {
 }
 
 // ---------- RENDER DISPATCH ----------
+const GLYPH_HOME_VIEWS = ['journal', 'compte', 'synthese', 'restitution', 'avant-ok', 'legal'];
 function render() {
+  const fg = document.getElementById('footer-glyph');
+  if (fg) fg.classList.toggle('on', !!state.session && GLYPH_HOME_VIEWS.includes(state.view));
   switch (state.view) {
     case 'auth': return renderAuth();
     case 'reset': return renderReset();
@@ -1153,6 +1260,7 @@ function render() {
     case 'synthese': return renderSynthese();
     case 'legal': return renderLegal();
     case 'recueil': return renderRecueil();
+    case 'avant-ok': return renderAvantOk();
     case 'sentiment': return renderSentiment();
     case 'nom': return renderNom();
     case 'extracting': return renderExtracting();
@@ -1169,6 +1277,9 @@ function render() {
 }
 
 document.getElementById('footer-glyph').innerHTML = GLYPH(26);
+document.getElementById('footer-glyph').addEventListener('click', () => {
+  if (state.session && GLYPH_HOME_VIEWS.includes(state.view)) goJournal();
+});
 init();
 if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) { navigator.serviceWorker.register('sw.js').catch(() => {}); }
 </script>
