@@ -313,7 +313,7 @@ function fmtDate(d) {
 }
 
 // Glyphe ⅃L dessiné comme le logo (mêmes traits, cadré serré) pour s'aligner sur le texte
-const GLYPH_INLINE = '<svg class="glyph-inline" viewBox="16 10 68 52" aria-label="⅃L" role="img"><path d="M 42 14 L 42 58 L 20 58 M 58 14 L 58 58 L 80 58" stroke="currentColor" stroke-width="8" stroke-linecap="square" stroke-linejoin="miter" fill="none"/></svg>';
+const GLYPH_INLINE = '<svg class="glyph-inline" viewBox="16 10 68 52" aria-label="⅃L" role="img"><path d="M 42 14 L 42 58 L 20 58 M 58 14 L 58 58 L 80 58" stroke="currentColor" stroke-width="5" stroke-linecap="square" stroke-linejoin="miter" fill="none"/></svg>';
 const AV_LABEL = 'av. ' + GLYPH_INLINE;
 // Le modèle cite les rêves anciens « av. ⅃L n » : on remplace les caractères par le glyphe du logo à l'affichage
 function fixGlyph(html) { return String(html).replace(/⅃L/g, GLYPH_INLINE); }
@@ -1391,7 +1391,7 @@ function render() {
 }
 
 // ---------- MISE À JOUR AUTOMATIQUE (app installée) ----------
-const APP_VERSION = '2026-10-08g';
+const APP_VERSION = '2026-10-08h';
 const SAFE_VIEWS = ['auth', 'journal', 'compte', 'synthese', 'legal', 'avant-ok', 'restitution'];
 async function checkUpdate() {
   if (location.protocol.indexOf('http') !== 0) return;
