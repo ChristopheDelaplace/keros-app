@@ -173,9 +173,6 @@
   .chip-pair-row { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; }
   .chip-pair-row .chip { width: 100%; }
   [hidden] { display: none !important; }
-  .nuance { display: flex; gap: 8px; justify-content: center; margin: -2px 0 6px; }
-  .nuance .chip { flex: 1; padding: 7px 8px; font-size: 12.5px; }
-  .chip.base.open { border-color: var(--accent); }
   .chip-pair-sep { color: var(--ink-faint); font-size: 12px; }
   .kw-input { width: 100%; border: 1px solid var(--line); border-radius: 10px; background: var(--card); color: var(--ink); padding: 10px 12px; font-family: 'Work Sans', sans-serif; font-size: 13.5px; min-height: 64px; resize: none; line-height: 1.4; }
   .kw-meta { display: flex; justify-content: space-between; margin-top: 8px; font-size: 10.5px; color: var(--ink-faint); font-family: 'IBM Plex Mono', monospace; }
@@ -641,17 +638,6 @@ const SENTIMENT_PAIRS = [
   ['Peur', 'Colère'],
   ['Surprise', 'Anticipation'],
 ];
-// Trois degrés par émotion de base, du plus doux au plus intense (Plutchik)
-const SENTIMENT_DEGREES = {
-  'Joie': ['Sérénité', 'Joie', 'Extase'],
-  'Tristesse': ['Mélancolie', 'Tristesse', 'Chagrin'],
-  'Confiance': ['Acceptation', 'Confiance', 'Admiration'],
-  'Dégoût': ['Ennui', 'Dégoût', 'Aversion'],
-  'Peur': ['Inquiétude', 'Peur', 'Terreur'],
-  'Colère': ['Agacement', 'Colère', 'Rage'],
-  'Surprise': ['Distraction', 'Surprise', 'Stupéfaction'],
-  'Anticipation': ['Intérêt', 'Anticipation', 'Vigilance'],
-};
 const SENTIMENT_REVE = ['Étrangeté', 'Nostalgie', 'Émerveillement', 'Honte', 'Culpabilité', 'Impuissance', 'Soulagement', 'Désir', 'Solitude', 'Tendresse', 'Confusion', 'Paix'];
 const SENTIMENT_MAX = 3;
 
@@ -669,12 +655,10 @@ function renderSentiment() {
         <div class="chip-pairs" id="sentiment-chips">
           ${SENTIMENT_PAIRS.map(([a, b]) => `
             <div class="chip-pair-row">
-              <button type="button" class="chip base" data-base="${escapeHtml(a)}">${escapeHtml(a)}</button>
+              ${chipHtml(a)}
               <span class="chip-pair-sep">↔</span>
-              <button type="button" class="chip base" data-base="${escapeHtml(b)}">${escapeHtml(b)}</button>
+              ${chipHtml(b)}
             </div>
-            <div class="nuance" data-nuance="${escapeHtml(a)}" hidden>${SENTIMENT_DEGREES[a].map(v => chipHtml(v, 'deg')).join('')}</div>
-            <div class="nuance" data-nuance="${escapeHtml(b)}" hidden>${SENTIMENT_DEGREES[b].map(v => chipHtml(v, 'deg')).join('')}</div>
           `).join('')}
         </div>
         <div class="a-label" style="margin-top:6px">Propres aux rêves</div>
@@ -699,13 +683,6 @@ function renderSentiment() {
       c.classList.toggle('selected', on);
       c.disabled = !on && full;
     });
-    root.querySelectorAll('.chip.base').forEach(c => {
-      const chosen = SENTIMENT_DEGREES[c.dataset.base].filter(v => selected.includes(v));
-      const has = chosen.length > 0;
-      c.textContent = has ? chosen.join(' + ') : c.dataset.base;
-      c.classList.toggle('selected', has);
-      c.disabled = !has && full;
-    });
     $('.autre-chip').classList.toggle('selected', autreOn);
     $('.autre-chip').disabled = !autreOn && full;
     btn.disabled = total() === 0;
@@ -715,15 +692,6 @@ function renderSentiment() {
   function onClick(e) {
     const chip = e.target.closest('.chip');
     if (!chip) return;
-    if (chip.classList.contains('base')) {
-      const base = chip.dataset.base;
-      const box = root.querySelector(`.nuance[data-nuance="${base}"]`);
-      const wasHidden = box.hidden;
-      root.querySelectorAll('.nuance').forEach(n => { n.hidden = true; });
-      root.querySelectorAll('.chip.base').forEach(c => c.classList.remove('open'));
-      if (wasHidden) { box.hidden = false; chip.classList.add('open'); }
-      return;
-    }
     if (chip.classList.contains('autre-chip')) {
       autreOn = !autreOn;
       $('#autre-field').hidden = !autreOn;
@@ -1352,7 +1320,7 @@ function render() {
 }
 
 // ---------- MISE À JOUR AUTOMATIQUE (app installée) ----------
-const APP_VERSION = '2026-10-08c';
+const APP_VERSION = '2026-10-08d';
 const SAFE_VIEWS = ['auth', 'journal', 'compte', 'synthese', 'legal', 'avant-ok', 'restitution'];
 async function checkUpdate() {
   if (location.protocol.indexOf('http') !== 0) return;
