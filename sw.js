@@ -1,5 +1,5 @@
 // Service worker minimal : réseau d'abord (les mises à jour arrivent tout de suite), cache en secours.
-const CACHE = 'mykeros-v1';
+const CACHE = 'mykeros-v2';
 const SHELL = ['./', 'index.html', 'mykeros-figure-cutout.png', 'icon-192.png'];
 
 self.addEventListener('install', (e) => {
@@ -20,7 +20,7 @@ self.addEventListener('fetch', (e) => {
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return; // Supabase, polices : jamais interceptés
   e.respondWith(
-    fetch(req)
+    fetch(req, { cache: 'no-cache' })
       .then((res) => {
         const copy = res.clone();
         caches.open(CACHE).then((c) => c.put(req, copy));
