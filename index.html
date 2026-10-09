@@ -1355,16 +1355,17 @@ function fillContact() {
 const LEGAL = {
   confidentialite: { titre: 'Confidentialité', html: () => `
     <p>mykeros est un projet en phase de test. Voici, simplement, ce qu'il fait de vos données.</p>
+    <p>Responsable du traitement : l'éditeur de mykeros, joignable à ${contactHtml()}.</p>
     <h3>Ce que nous conservons</h3>
     <ul><li>Votre adresse e-mail, votre prénom et, si vous le souhaitez, votre genre.</li><li>Vos rêves : récit, émotion, titre, mots-clés, associations, contexte et lecture générée.</li></ul>
     <p>Un rêve peut révéler des informations sensibles (santé, vie intime, convictions). En créant votre compte, vous consentez expressément à ce que ces contenus soient traités pour produire vos lectures.</p>
     <h3>Pourquoi, et avec qui</h3>
-    <ul><li>Uniquement pour faire fonctionner votre journal et générer vos lectures. Aucune publicité, aucune revente.</li><li>Les données sont hébergées par Supabase. Pour générer une lecture, le contenu du rêve est transmis à Anthropic (États-Unis), qui fournit l'IA.</li><li>La dictée vocale est assurée par le service de reconnaissance vocale de votre navigateur ou appareil.</li><li>L'éditeur, en tant qu'administrateur de la base de données, peut techniquement accéder aux contenus enregistrés. Il s'interdit de les consulter, sauf pour résoudre un problème technique à votre demande ou si la loi l'exige.</li></ul>
+    <ul><li>Uniquement pour faire fonctionner votre journal et générer vos lectures. Aucune publicité, aucune revente.</li><li>Les données sont hébergées par Supabase, dans l'Union européenne (Francfort). Pour générer une lecture, le contenu du rêve est transmis à Anthropic (États-Unis), qui fournit l'IA.</li><li>Les e-mails techniques (connexion, mot de passe) sont envoyés par Resend, depuis l'Union européenne.</li><li>La dictée vocale est assurée par le service de reconnaissance vocale de votre navigateur ou appareil.</li><li>L'éditeur, en tant qu'administrateur de la base de données, peut techniquement accéder aux contenus enregistrés. Il s'interdit de les consulter, sauf pour résoudre un problème technique à votre demande ou si la loi l'exige.</li></ul>
     <h3>Vos droits</h3>
     <p>Vous pouvez à tout moment exporter vos données et supprimer vos rêves ou votre compte depuis « Mon compte » : la suppression est immédiate et définitive. Pour toute autre demande (accès, rectification, opposition) : ${contactHtml()}. Vous pouvez aussi saisir la CNIL (cnil.fr).</p>
     <h3>Cookies</h3>
     <p>Aucun cookie publicitaire ni mesure d'audience. Seule votre session de connexion est conservée.</p>
-    <p class="stamp">Version de test, mise à jour le 7 octobre 2026.</p>` },
+    <p class="stamp">Version de test, mise à jour le 9 octobre 2026.</p>` },
   cgu: { titre: 'Conditions d\'utilisation', html: () => `
     <p>mykeros est un journal de rêves accompagné d'une lecture par intelligence artificielle, en phase de test et gratuit.</p>
     <h3>Ce que mykeros n'est pas</h3>
@@ -1424,7 +1425,7 @@ function render() {
 }
 
 // ---------- MISE À JOUR AUTOMATIQUE (app installée) ----------
-const APP_VERSION = '2026-10-09c';
+const APP_VERSION = '2026-10-09d';
 const SAFE_VIEWS = ['auth', 'journal', 'compte', 'synthese', 'legal', 'avant-ok', 'restitution'];
 async function checkUpdate() {
   if (location.protocol.indexOf('http') !== 0) return;
