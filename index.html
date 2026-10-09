@@ -211,11 +211,11 @@
   .journal-title { font-size: 22px; margin-bottom: 16px; }
   .journal-list { display: flex; flex-direction: column; gap: 10px; }
   .syn-card { display: flex; align-items: center; gap: 12px; width: 100%; margin-bottom: 14px; padding: 13px 14px; border-radius: 12px; border: 1px solid var(--accent); background: var(--accent-soft); color: var(--ink); text-align: left; cursor: pointer; font-family: inherit; }
-  .syn-card .gl { color: var(--accent); flex-shrink: 0; display: flex; }
-  .syn-card .meta { flex: 1; min-width: 0; }
+  .syn-card .gl { color: var(--accent); flex-shrink: 0; display: flex; width: 24px; }
+  .syn-card .meta { flex: 1; min-width: 0; text-align: center; }
   .syn-card .sub { font-size: 11px; color: var(--ink-soft); margin-top: 2px; }
   .syn-card .name { font-family: 'Fraunces', serif; font-size: 15px; }
-  .syn-card .chev { color: var(--accent); flex-shrink: 0; }
+  .syn-card .chev { color: var(--accent); flex-shrink: 0; display: flex; justify-content: flex-end; width: 24px; }
   .journal-row { display: flex; align-items: center; gap: 12px; background: var(--card-2); border-radius: 12px; padding: 12px 14px; cursor: pointer; text-align: left; border: none; width: 100%; font-family: inherit; color: var(--ink); }
   .journal-row .num { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--ink-faint); flex-shrink: 0; width: 40px; }
   .journal-row .meta { flex: 1; min-width: 0; }
@@ -1424,7 +1424,7 @@ function render() {
 }
 
 // ---------- MISE À JOUR AUTOMATIQUE (app installée) ----------
-const APP_VERSION = '2026-10-09b';
+const APP_VERSION = '2026-10-09c';
 const SAFE_VIEWS = ['auth', 'journal', 'compte', 'synthese', 'legal', 'avant-ok', 'restitution'];
 async function checkUpdate() {
   if (location.protocol.indexOf('http') !== 0) return;
