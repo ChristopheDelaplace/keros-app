@@ -1010,6 +1010,37 @@ function renderAvantRead(reve) {
   };
 }
 
+// Réaction du rêveur à la lecture : enregistrée sur le rêve, prioritaire dans la synthèse
+function bindComment(reve) {
+  const box = $('#rest-comment');
+  if (!box) return;
+  const show = () => {
+    box.innerHTML = `<h3>Votre réaction</h3>
+      ${reve.commentaire
+        ? `<div class="piste-rep">${escapeHtml(reve.commentaire)}</div><div class="piste-actions"><button class="link-btn" id="cm-open">Modifier</button></div>`
+        : `<p class="piste-hint">Corriger un point, préciser, réagir : la synthèse en tiendra compte.</p><div class="piste-actions" style="justify-content:flex-start"><button class="link-btn" id="cm-open" style="padding-left:0">Réagir à cette lecture</button></div>`}`;
+    box.querySelector('#cm-open').onclick = edit;
+  };
+  const edit = () => {
+    box.innerHTML = `<h3>Votre réaction</h3><div class="piste-edit">
+      <textarea maxlength="4000" placeholder="Ce qui sonne juste, ce qui ne colle pas, ce que vous ajouteriez…"></textarea>
+      <div class="row"><button class="btn btn-ghost" id="cm-cancel">Annuler</button><button class="btn btn-primary" id="cm-save">Enregistrer</button></div></div>`;
+    const ta = box.querySelector('textarea');
+    ta.value = reve.commentaire || '';
+    ta.focus();
+    box.querySelector('#cm-cancel').onclick = show;
+    box.querySelector('#cm-save').onclick = async (ev) => {
+      const btn = ev.currentTarget; btn.disabled = true; btn.textContent = 'Enregistrement…';
+      const txt = ta.value.trim() || null;
+      const { error } = await sb.from('reves').update({ commentaire: txt, commentaire_at: txt ? new Date().toISOString() : null }).eq('id', reve.id);
+      if (error) { btn.disabled = false; btn.textContent = 'Réessayer'; return; }
+      reve.commentaire = txt;
+      const j = (state.journal || []).find(x => x.id === reve.id); if (j) j.commentaire = txt;
+      show();
+    };
+  };
+  show();
+}
 function renderRestitution(reve) {
   if (reve.avant_m && !reve.restitution) return renderAvantRead(reve);
   const r = reve.restitution || { sections: [], motif_recurrent: { present: false } };
@@ -1031,6 +1062,7 @@ function renderRestitution(reve) {
       ${(r.sections || []).map(s => `
         <div class="rest-block"><h3>${escapeHtml(s.titre)}</h3><p>${escapeHtml(s.texte)}</p></div>
       `).join('')}
+      ${reve.id && (r.sections || []).length ? `<div class="rest-block" id="rest-comment"></div>` : ''}
       ${isStandard ? `
         <div class="premium-cta">
           <span class="txt">Passer en Premium pour nommer ces figures et approfondir la lecture.</span>
@@ -1044,6 +1076,7 @@ function renderRestitution(reve) {
     </div>
   `);
   bindTopNav();
+  bindComment(reve);
   const dd = $('#del-dream');
   if (dd) dd.onclick = async () => {
     if (!confirm('Supprimer définitivement ce rêve, sa lecture, ses mots-clés et ses associations ?')) return;
@@ -1391,7 +1424,7 @@ function render() {
 }
 
 // ---------- MISE À JOUR AUTOMATIQUE (app installée) ----------
-const APP_VERSION = '2026-10-09a';
+const APP_VERSION = '2026-10-09b';
 const SAFE_VIEWS = ['auth', 'journal', 'compte', 'synthese', 'legal', 'avant-ok', 'restitution'];
 async function checkUpdate() {
   if (location.protocol.indexOf('http') !== 0) return;
