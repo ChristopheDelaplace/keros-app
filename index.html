@@ -500,7 +500,7 @@ function topNav(showJournal, showLogout) {
   </div>`;
 }
 function bindTopNav() {
-  const j = $('#nav-journal'); if (j) j.onclick = goJournal;
+  const j = $('#nav-journal'); if (j) j.onclick = () => { state.journalQuery = ''; goJournal(); };
   const l = $('#nav-logout'); if (l) l.onclick = async () => { await sb.auth.signOut(); };
 }
 
@@ -1568,7 +1568,7 @@ function render() {
 }
 
 // ---------- MISE À JOUR AUTOMATIQUE (app installée) ----------
-const APP_VERSION = '2026-10-18e';
+const APP_VERSION = '2026-10-18f';
 const SAFE_VIEWS = ['auth', 'journal', 'compte', 'synthese', 'legal', 'avant-ok', 'restitution'];
 async function checkUpdate() {
   if (location.protocol.indexOf('http') !== 0) return;
