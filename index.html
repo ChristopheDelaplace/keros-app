@@ -245,6 +245,21 @@
   .legal-body ul { padding-left: 18px; }
   .legal-body .todo { background: var(--rose-soft); color: var(--rose); border-radius: 4px; padding: 0 4px; }
   .legal-body .stamp { font-size: 11.5px; color: var(--ink-faint); }
+  .fig-dialog { margin: 22px 0 6px; padding-top: 18px; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 12px; }
+  .fig-row { display: flex; gap: 10px; align-items: flex-start; }
+  .fig-av { width: 38px; height: 38px; border-radius: 50%; flex-shrink: 0; overflow: hidden; background: var(--card-2); display: flex; align-items: flex-start; justify-content: center; }
+  .fig-av img { width: 30px; margin-top: 3px; }
+  .fig-bub { background: var(--card-2); border-radius: 4px 16px 16px 16px; padding: 10px 14px; font-family: 'Fraunces', serif; font-size: 15px; line-height: 1.5; color: var(--ink); white-space: pre-wrap; }
+  .me-row { display: flex; justify-content: flex-end; }
+  .me-bub { background: var(--accent-soft); border-radius: 16px 4px 16px 16px; padding: 10px 14px; font-size: 14px; line-height: 1.5; color: var(--ink); max-width: 85%; white-space: pre-wrap; }
+  .fig-input { display: flex; gap: 8px; align-items: flex-end; }
+  .fig-input textarea { flex: 1; border: 1px solid var(--line); border-radius: 14px; background: var(--card); padding: 10px 12px; font-family: 'Work Sans', sans-serif; font-size: 16px; min-height: 44px; resize: none; color: var(--ink); box-sizing: border-box; }
+  .fig-input button { border: none; background: var(--accent); color: var(--card); border-radius: 50%; width: 42px; height: 42px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+  .fig-note { font-size: 11px; color: var(--ink-faint); text-align: center; }
+  .fig-typing { display: flex; gap: 5px; align-items: center; min-height: 22px; }
+  .fig-typing span { width: 6px; height: 6px; border-radius: 50%; background: var(--ink-faint); animation: figdot 1.2s infinite ease-in-out; }
+  .fig-typing span:nth-child(2) { animation-delay: .2s; } .fig-typing span:nth-child(3) { animation-delay: .4s; }
+  @keyframes figdot { 0%, 80%, 100% { opacity: .25; } 40% { opacity: 1; } }
   .to-top-wrap { display: flex; justify-content: center; margin: 18px 0 8px; }
   .to-top { width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--line); background: var(--card); color: var(--accent); display: flex; align-items: center; justify-content: center; cursor: pointer; }
   .syn-meta { font-size: 11.5px; color: var(--ink-faint); margin: 0 0 14px; text-align: center; }
@@ -1073,6 +1088,38 @@ function bindComment(reve) {
   };
   show();
 }
+// Dialogue avec la figure de Kéros : une question sur le rêve, la réponse du rêveur, une réponse de la figure
+const FIG_AV = '<div class="fig-av"><img src="mykeros-figure-cutout.png" alt=""></div>';
+const FIG_SEND = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>';
+function bindFigure(reve) {
+  const box = $('#fig-dialog');
+  if (!box) return;
+  const bubble = m => m.role === 'figure'
+    ? `<div class="fig-row">${FIG_AV}<div class="fig-bub">${escapeHtml(m.texte)}</div></div>`
+    : `<div class="me-row"><div class="me-bub">${escapeHtml(m.texte)}</div></div>`;
+  const typing = `<div class="fig-row">${FIG_AV}<div class="fig-bub fig-typing"><span></span><span></span><span></span></div></div>`;
+  const draw = (d, pending) => {
+    const msgs = (d && d.messages) || [];
+    const open = d && d.tours < d.max_tours && msgs.length && msgs[msgs.length - 1].role === 'figure';
+    box.innerHTML = msgs.map(bubble).join('') + (pending ? bubble({ role: 'reveur', texte: pending }) + typing : '')
+      + (open && !pending ? `<div class="fig-input"><textarea id="fig-text" rows="2" maxlength="4000" placeholder="Ce qui vous vient…"></textarea><button id="fig-send" aria-label="Envoyer">${FIG_SEND}</button></div>` : '')
+      + (d && !open && !pending && msgs.length > 1 ? `<div class="fig-note">Un échange par rêve · vos réponses nourrissent la synthèse</div>` : '');
+    const send = box.querySelector('#fig-send');
+    if (send) send.onclick = async () => {
+      const t = box.querySelector('#fig-text').value.trim();
+      if (!t) return;
+      draw(d, t);
+      const { data, error } = await sb.functions.invoke('figure', { body: { reve_id: reve.id, reponse: t } });
+      if (error || !data || !data.messages) { draw(d); box.insertAdjacentHTML('beforeend', '<div class="fig-note">La réponse n\'a pas pu être envoyée. Réessayez dans un instant.</div>'); box.querySelector('#fig-text').value = t; return; }
+      draw(data);
+    };
+  };
+  box.innerHTML = typing;
+  sb.functions.invoke('figure', { body: { reve_id: reve.id } }).then(({ data, error }) => {
+    if (error || !data || !data.messages) { box.remove(); return; }
+    draw(data);
+  });
+}
 function renderRestitution(reve) {
   if (reve.avant_m && !reve.restitution) return renderAvantRead(reve);
   const r = reve.restitution || { sections: [], motif_recurrent: { present: false } };
@@ -1094,6 +1141,7 @@ function renderRestitution(reve) {
       ${(r.sections || []).map(s => `
         <div class="rest-block"><h3>${escapeHtml(s.titre)}</h3><p>${escapeHtml(s.texte)}</p></div>
       `).join('')}
+      ${reve.id && (r.sections || []).length ? `<div class="fig-dialog" id="fig-dialog"></div>` : ''}
       ${reve.id && (r.sections || []).length ? `<div class="rest-block" id="rest-comment"></div>` : ''}
       ${isStandard ? `
         <div class="premium-cta">
@@ -1109,6 +1157,7 @@ function renderRestitution(reve) {
   `);
   bindTopNav();
   bindComment(reve);
+  bindFigure(reve);
   const dd = $('#del-dream');
   if (dd) dd.onclick = async () => {
     if (!confirm('Supprimer définitivement ce rêve, sa lecture, ses mots-clés et ses associations ?')) return;
@@ -1519,7 +1568,7 @@ function render() {
 }
 
 // ---------- MISE À JOUR AUTOMATIQUE (app installée) ----------
-const APP_VERSION = '2026-10-18c';
+const APP_VERSION = '2026-10-18d';
 const SAFE_VIEWS = ['auth', 'journal', 'compte', 'synthese', 'legal', 'avant-ok', 'restitution'];
 async function checkUpdate() {
   if (location.protocol.indexOf('http') !== 0) return;
