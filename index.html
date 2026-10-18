@@ -610,6 +610,27 @@ function renderRecueil() {
       else if (d && !m) err = 'Indiquez aussi le mois, ou retirez le jour.';
       else if (m && d && new Date(y, m - 1, d).getMonth() !== m - 1) err = 'Cette date n\'existe pas.';
       else if (new Date(y, (m || 1) - 1, d || 1) > now) err = 'Ce rêve ne peut pas être dans le futur.';
+      // Un rêve postérieur à l'inscription n'est pas « d'avant mykeros » : il rejoint le journal normal (#n)
+      const signup = state.profile && state.profile.created_at ? new Date(state.profile.created_at) : null;
+      if (!err && signup) {
+        const s0 = new Date(signup.getFullYear(), signup.getMonth(), signup.getDate());
+        const fin = d ? new Date(y, m - 1, d) : (m ? new Date(y, m, 0) : new Date(y, 11, 31));
+        if (fin >= s0) {
+          if (!d) err = `Ce rêve pourrait dater d'après votre inscription (${fmtDate(signup)}) : précisez le jour.`;
+          else {
+            const dateIso = `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+            if (!confirm(`Ce rêve date d'après votre inscription à mykeros (${fmtDate(signup)}). Il sera ajouté à votre journal comme un rêve mykeros, avec émotions et mots-clés. Continuer ?`)) return;
+            const b = $('#recueil-continue'); b.disabled = true; b.textContent = 'Un instant…';
+            const { data: reve, error } = await sb.from('reves').insert({
+              user_id: state.session.user.id, transcription: state.recit, date: dateIso, date_precision: 'jour', avant_m: false,
+            }).select().single();
+            if (error) { alert('Erreur à l\'enregistrement du rêve : ' + (error.message || error)); b.disabled = false; b.textContent = 'Enregistrer'; return; }
+            state.avantM = false; state.reve = reve; state.keywords = []; state.kwIndex = 0; state.view = 'sentiment';
+            render();
+            return;
+          }
+        }
+      }
       if (err) { micHint.textContent = err; return; }
       const btn2 = $('#recueil-continue');
       btn2.disabled = true; btn2.textContent = 'Un instant…';
@@ -1425,7 +1446,7 @@ function render() {
 }
 
 // ---------- MISE À JOUR AUTOMATIQUE (app installée) ----------
-const APP_VERSION = '2026-10-09d';
+const APP_VERSION = '2026-10-18a';
 const SAFE_VIEWS = ['auth', 'journal', 'compte', 'synthese', 'legal', 'avant-ok', 'restitution'];
 async function checkUpdate() {
   if (location.protocol.indexOf('http') !== 0) return;
