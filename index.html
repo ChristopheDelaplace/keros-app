@@ -236,6 +236,8 @@
   .legal-body ul { padding-left: 18px; }
   .legal-body .todo { background: var(--rose-soft); color: var(--rose); border-radius: 4px; padding: 0 4px; }
   .legal-body .stamp { font-size: 11.5px; color: var(--ink-faint); }
+  .to-top-wrap { display: flex; justify-content: center; margin: 18px 0 8px; }
+  .to-top { width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--line); background: var(--card); color: var(--accent); display: flex; align-items: center; justify-content: center; cursor: pointer; }
   .syn-meta { font-size: 11.5px; color: var(--ink-faint); margin: 0 0 14px; text-align: center; }
   .syn-refs { font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; color: var(--ink-faint); letter-spacing: 0.04em; margin-left: 6px; text-transform: none; font-weight: 400; }
   .syn-list { margin: 0; padding-left: 18px; font-size: 14px; line-height: 1.6; }
@@ -1298,7 +1300,19 @@ async function renderSynthese() {
       ${syn ? `<p class="syn-meta">Générée le ${fmtDate(syn.created_at)} · ${syn.nb_reves} rêves</p>${syntheseBodyHtml(syn.contenu, syn.id, refl)}` : ''}
       ${!enough ? `<div class="journal-empty" style="margin-top:20px">Il faut au moins ${SYNTHESE_MIN} rêves pour une synthèse. Vous en avez ${nb}.</div>` : `
         <div class="footer-actions"><button class="btn ${syn ? 'btn-ghost' : 'btn-primary'} btn-block" id="syn-go">${syn ? 'Actualiser la synthèse' : 'Générer la synthèse'}</button></div>`}
+      ${syn ? `<div class="to-top-wrap"><button class="to-top" id="syn-top" aria-label="Revenir en haut"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 15 12 9 18 15"/></svg></button></div>` : ''}
     `;
+    const top = $('#syn-top');
+    if (top) top.onclick = () => {
+      // remonte le conteneur qui défile réellement (vue interne ou page)
+      let el = top.parentElement;
+      while (el && el !== document.body) {
+        const oy = getComputedStyle(el).overflowY;
+        if ((oy === 'auto' || oy === 'scroll') && el.scrollHeight > el.clientHeight) { el.scrollTo({ top: 0, behavior: 'smooth' }); return; }
+        el = el.parentElement;
+      }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
     if (syn) bindPistes(syn, refl, () => draw(syn));
     const go = $('#syn-go');
     if (go) go.onclick = async () => {
@@ -1446,7 +1460,7 @@ function render() {
 }
 
 // ---------- MISE À JOUR AUTOMATIQUE (app installée) ----------
-const APP_VERSION = '2026-10-18a';
+const APP_VERSION = '2026-10-18b';
 const SAFE_VIEWS = ['auth', 'journal', 'compte', 'synthese', 'legal', 'avant-ok', 'restitution'];
 async function checkUpdate() {
   if (location.protocol.indexOf('http') !== 0) return;
