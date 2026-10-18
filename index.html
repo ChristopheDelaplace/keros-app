@@ -1568,7 +1568,7 @@ function render() {
 }
 
 // ---------- MISE À JOUR AUTOMATIQUE (app installée) ----------
-const APP_VERSION = '2026-10-18d';
+const APP_VERSION = '2026-10-18e';
 const SAFE_VIEWS = ['auth', 'journal', 'compte', 'synthese', 'legal', 'avant-ok', 'restitution'];
 async function checkUpdate() {
   if (location.protocol.indexOf('http') !== 0) return;
@@ -1584,7 +1584,7 @@ setTimeout(checkUpdate, 3000);
 
 document.getElementById('footer-glyph').innerHTML = GLYPH(26);
 document.getElementById('footer-glyph').addEventListener('click', () => {
-  if (state.session && GLYPH_HOME_VIEWS.includes(state.view)) goJournal();
+  if (state.session && GLYPH_HOME_VIEWS.includes(state.view)) { state.journalQuery = ''; goJournal(); }
 });
 init();
 if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) { navigator.serviceWorker.register('sw.js').catch(() => {}); }
