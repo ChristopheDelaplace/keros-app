@@ -274,6 +274,12 @@
   .piste-edit textarea { width: 100%; min-height: 96px; resize: vertical; border: 1px solid var(--line); border-radius: 10px; background: var(--card); color: var(--ink); padding: 10px 12px; font-family: 'Work Sans', sans-serif; font-size: 14px; line-height: 1.5; box-sizing: border-box; }
   .piste-edit .row { display: flex; gap: 8px; justify-content: flex-end; margin-top: 8px; }
   .piste-edit .btn { padding: 8px 14px; font-size: 13px; }
+  .recit-txt { background: var(--card-2); border-radius: 12px; padding: 12px 14px; font-size: 14px; line-height: 1.6; white-space: pre-wrap; color: var(--ink); }
+  .recit-txt .in { white-space: pre-wrap; }
+  .recit-txt.clamp .in { display: -webkit-box; -webkit-line-clamp: 6; -webkit-box-orient: vertical; overflow: hidden; }
+  .recit-actions { display: flex; gap: 4px; justify-content: space-between; margin-top: 4px; }
+  .recit-actions .link-btn { padding: 4px 6px; font-size: 12.5px; }
+  .recit-edit textarea { min-height: 220px; }
   .rest-block .piste-hint { font-size: 11.5px; color: var(--ink-faint); margin: 2px 0 12px; }
   .danger-link { background: none; border: none; color: var(--danger); font-size: 12.5px; cursor: pointer; font-family: 'Work Sans', sans-serif; text-decoration: underline; padding: 6px; }
   .account-section { margin-top: 18px; display: flex; flex-direction: column; gap: 10px; text-align: left; }
@@ -1060,6 +1066,52 @@ function renderAvantRead(reve) {
 }
 
 // Réaction du rêveur à la lecture : enregistrée sur le rêve, prioritaire dans la synthèse
+// Récit du rêve : relire, copier, corriger
+function bindRecit(reve) {
+  const box = $('#rest-recit');
+  if (!box) return;
+  let open = false;
+  const show = (note) => {
+    box.innerHTML = `<h3>Le rêve</h3>
+      <div class="recit-txt${open ? '' : ' clamp'}"><div class="in">${escapeHtml(reve.transcription || '')}</div></div>
+      <div class="recit-actions"><button class="link-btn" id="rc-more" style="padding-left:0" hidden>${open ? 'Réduire' : 'Tout lire'}</button><span style="flex:1"></span><button class="link-btn" id="rc-copy">Copier</button><button class="link-btn" id="rc-edit">Modifier</button></div>
+      ${note ? `<p class="piste-hint" style="margin-top:4px">${note}</p>` : ''}`;
+    const txt = box.querySelector('.recit-txt .in');
+    const more = box.querySelector('#rc-more');
+    if (open || txt.scrollHeight > txt.clientHeight + 2) more.hidden = false;
+    more.onclick = () => { open = !open; show(); };
+    box.querySelector('#rc-copy').onclick = async (ev) => {
+      const b = ev.currentTarget;
+      try { await navigator.clipboard.writeText(reve.transcription || ''); }
+      catch (e) { const t = document.createElement('textarea'); t.value = reve.transcription || ''; document.body.appendChild(t); t.select(); try { document.execCommand('copy'); } catch (_) {} t.remove(); }
+      b.textContent = 'Copié ✓'; setTimeout(() => { b.textContent = 'Copier'; }, 1500);
+    };
+    box.querySelector('#rc-edit').onclick = edit;
+  };
+  const edit = () => {
+    box.innerHTML = `<h3>Le rêve</h3><div class="piste-edit recit-edit">
+      <textarea maxlength="20000"></textarea>
+      <div class="row"><button class="btn btn-ghost" id="rc-cancel">Annuler</button><button class="btn btn-primary" id="rc-save">Enregistrer</button></div></div>`;
+    const ta = box.querySelector('textarea');
+    ta.value = reve.transcription || '';
+    ta.focus();
+    box.querySelector('#rc-cancel').onclick = () => show();
+    box.querySelector('#rc-save').onclick = async (ev) => {
+      const btn = ev.currentTarget;
+      const txt = ta.value.trim();
+      if (!txt) { ta.focus(); return; }
+      if (txt === (reve.transcription || '').trim()) { show(); return; }
+      btn.disabled = true; btn.textContent = 'Enregistrement…';
+      const { error } = await sb.from('reves').update({ transcription: txt }).eq('id', reve.id);
+      if (error) { btn.disabled = false; btn.textContent = 'Réessayer'; return; }
+      reve.transcription = txt;
+      const j = (state.journal || []).find(x => x.id === reve.id); if (j) j.transcription = txt;
+      open = true;
+      show('Récit mis à jour. La lecture ci-dessous reste celle du récit d\'origine ; la synthèse utilisera le nouveau texte.');
+    };
+  };
+  show();
+}
 function bindComment(reve) {
   const box = $('#rest-comment');
   if (!box) return;
@@ -1137,6 +1189,7 @@ function renderRestitution(reve) {
       ${r.motif_recurrent && r.motif_recurrent.present ? `
         <div class="motif-card"><span class="t">${escapeHtml(r.motif_recurrent.texte)}</span></div>
       ` : ''}
+      ${reve.id && reve.transcription ? `<div class="rest-block" id="rest-recit"></div>` : ''}
       ${(r.sections || []).length === 0 ? `
         <div class="msg error" style="margin:12px 0;">La lecture de ce rêve n'a pas pu être générée. <button class="link-btn" id="retry-empty">Relancer l\'analyse</button></div>
       ` : ''}
@@ -1158,6 +1211,7 @@ function renderRestitution(reve) {
     </div>
   `);
   bindTopNav();
+  bindRecit(reve);
   bindComment(reve);
   bindFigure(reve);
   const dd = $('#del-dream');
@@ -1570,7 +1624,7 @@ function render() {
 }
 
 // ---------- MISE À JOUR AUTOMATIQUE (app installée) ----------
-const APP_VERSION = '2026-10-20a';
+const APP_VERSION = '2026-10-20b';
 const SAFE_VIEWS = ['auth', 'journal', 'compte', 'synthese', 'legal', 'avant-ok', 'restitution'];
 async function checkUpdate() {
   if (location.protocol.indexOf('http') !== 0) return;
