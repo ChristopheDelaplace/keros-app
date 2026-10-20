@@ -820,7 +820,9 @@ async function startAssociations() {
     });
     if (error) throw error;
     const mots = (data && data.mots_cles) || [];
-    state.keywords = mots.map(m => ({ texte: m.texte, categorie: m.categorie, association: '' }));
+    const CATS = ['personnage', 'lieu', 'objet', 'emotion', 'action'];
+    const normCat = c => { const v = String(c || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim(); return CATS.includes(v) ? v : 'objet'; };
+    state.keywords = mots.map(m => ({ texte: m.texte, categorie: normCat(m.categorie), association: '' }));
     if (state.keywords.length === 0) {
       state.keywords = [{ texte: 'Un élément marquant', categorie: 'action', association: '' }];
     }
@@ -1568,7 +1570,7 @@ function render() {
 }
 
 // ---------- MISE À JOUR AUTOMATIQUE (app installée) ----------
-const APP_VERSION = '2026-10-19a';
+const APP_VERSION = '2026-10-20a';
 const SAFE_VIEWS = ['auth', 'journal', 'compte', 'synthese', 'legal', 'avant-ok', 'restitution'];
 async function checkUpdate() {
   if (location.protocol.indexOf('http') !== 0) return;
