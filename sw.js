@@ -1,5 +1,5 @@
 // Service worker minimal : réseau d'abord (les mises à jour arrivent tout de suite), cache en secours.
-const CACHE = 'mykeros-v2';
+const CACHE = 'mykeros-v3';
 const SHELL = ['./', 'index.html', 'mykeros-figure-cutout.png', 'icon-192.png'];
 
 self.addEventListener('install', (e) => {
