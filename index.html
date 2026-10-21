@@ -1144,7 +1144,7 @@ function bindRecit(reve) {
       if (!txt) { ta.focus(); return; }
       if (txt === (reve.transcription || '').trim()) { show(); return; }
       btn.disabled = true; btn.textContent = 'Enregistrement…';
-      const { error } = await sb.from('reves').update({ transcription: txt }).eq('id', reve.id);
+      const { error } = await sb.from('reves').update({ transcription: txt, fiche: null, fiche_at: null }).eq('id', reve.id);
       if (error) { btn.disabled = false; btn.textContent = 'Réessayer'; return; }
       reve.transcription = txt;
       const j = (state.journal || []).find(x => x.id === reve.id); if (j) j.transcription = txt;
@@ -1297,6 +1297,21 @@ async function goJournal() {
   state.lastSyn = (syn && syn[0]) || null;
   state.view = 'journal';
   render();
+  genererFiches();
+}
+
+// Fiches condensées : générées en arrière-plan, par lots, pour les rêves qui n'en ont pas encore
+let fichesEnCours = false;
+async function genererFiches() {
+  if (fichesEnCours || journalSeul() || !state.session) return;
+  fichesEnCours = true;
+  try {
+    for (let i = 0; i < 150; i++) {
+      const { data, error } = await sb.functions.invoke('fiche', { body: {} });
+      if (error || !data || !data.faits || !data.restants) break;
+    }
+  } catch (e) { /* silencieux : on réessaiera au prochain passage par le journal */ }
+  fichesEnCours = false;
 }
 
 function renderJournalLoading() {
@@ -1727,7 +1742,7 @@ function render() {
 }
 
 // ---------- MISE À JOUR AUTOMATIQUE (app installée) ----------
-const APP_VERSION = '2026-10-21b';
+const APP_VERSION = '2026-10-21c';
 const SAFE_VIEWS = ['auth', 'journal', 'compte', 'synthese', 'legal', 'avant-ok', 'restitution'];
 async function checkUpdate() {
   if (location.protocol.indexOf('http') !== 0) return;
