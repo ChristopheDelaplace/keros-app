@@ -1072,7 +1072,6 @@ function renderRestituting() {
       <div class="loading-block">
         <div class="spinner"></div>
         <div>mykeros prend le temps de relier les fils…</div>
-        <div style="font-size:12px;color:var(--ink-faint);margin-top:10px;max-width:280px;text-align:center">Vous pouvez quitter l'app : la lecture continue et vous attendra dans votre journal.</div>
       </div>
     </div>
   `);
@@ -1617,7 +1616,7 @@ async function renderSynthese() {
     const enough = nb >= SYNTHESE_MIN;
     body.innerHTML = `
       <div id="syn-msg"></div>
-      ${enCours ? `<div class="loading-block" style="padding:18px 0 22px"><div class="spinner"></div><div>Synthèse en cours : mykeros lit vos rêves… (une à deux minutes)</div><div style="font-size:12px;color:var(--ink-faint);margin-top:8px;max-width:280px;text-align:center">Vous pouvez quitter l'app : elle vous attendra ici.</div></div>` : ''}
+      ${enCours ? `<div class="loading-block" style="padding:18px 0 22px"><div class="spinner"></div><div>Synthèse en cours…</div></div>` : ''}
       ${syn ? `<p class="syn-meta">Générée le ${fmtDate(syn.created_at)} · ${syn.nb_reves} rêves</p>${syntheseBodyHtml(syn.contenu, syn.id, refl)}` : ''}
       ${enCours ? '' : !enough ? `<div class="journal-empty" style="margin-top:20px">Il faut au moins ${SYNTHESE_MIN} rêves pour une synthèse. Vous en avez ${nb}.</div>` : `
         <div class="footer-actions"><button class="btn ${syn ? 'btn-ghost' : 'btn-primary'} btn-block" id="syn-go">${syn ? 'Actualiser la synthèse' : 'Générer la synthèse'}</button></div>`}
