@@ -988,32 +988,40 @@ async function runRestitution(contexte) {
   state.view = 'restituting';
   render();
   try {
-    const ancien = !!state.reve.avant_m;
-    const { data, error } = await sb.functions.invoke('restitution', {
-      body: {
-        recit: state.reve.transcription,
-        sentiment: ancien ? '' : (state.reve.sentiment || '(non renseigné)'),
-        nom: state.reve.nom,
-        mots_cles: ancien ? [] : state.keywords,
-        contexte: contexte,
-        niveau: (state.profile && state.profile.tier) || 'standard',
-        genre: state.session?.user?.user_metadata?.genre || '',
-        ancien: ancien,
-        date_label: ancien ? fmtDateR(state.reve) : '',
-      },
-    });
+    // Le serveur lit le rêve, répond tout de suite, puis génère et enregistre la lecture lui-même
+    const { data, error } = await sb.functions.invoke('restitution', { body: { reve_id: state.reve.id } });
     if (error) throw error;
-    const upd = { restitution: data };
-    if (ancien && data && typeof data.titre === 'string' && data.titre.trim()) upd.nom = data.titre.trim().slice(0, 80);
-    await sb.from('reves').update(upd).eq('id', state.reve.id);
-    state.reve.restitution = data;
-    if (upd.nom) state.reve.nom = upd.nom;
-    state.view = 'restitution';
-    render();
+    state.reve.lecture_statut = 'en_cours';
+    state.reve.lecture_debut = (data && data.lecture_debut) || new Date().toISOString();
+    const j = (state.journal || []).find(x => x.id === state.reve.id); if (j) { j.lecture_statut = 'en_cours'; j.lecture_debut = state.reve.lecture_debut; }
+    suivreLecture(state.reve.id);
   } catch (err) {
     state.view = 'restitution-error';
     render();
   }
+}
+
+// Lecture en cours côté serveur : au-delà de 6 minutes sans résultat, on la considère comme échouée
+const LECTURE_DELAI = 6 * 60 * 1000;
+const lectureEnCours = r => !!r && r.lecture_statut === 'en_cours' && (Date.now() - new Date(r.lecture_debut || 0).getTime()) < LECTURE_DELAI;
+const lectureEchouee = r => !!r && !r.restitution && (r.lecture_statut === 'erreur' || (r.lecture_statut === 'en_cours' && !lectureEnCours(r)));
+let suiviLecture = null;
+function suivreLecture(id) {
+  if (suiviLecture) clearTimeout(suiviLecture);
+  const tour = async () => {
+    suiviLecture = null;
+    if (state.view !== 'restituting' || !state.reve || state.reve.id !== id) return; // l'utilisateur est ailleurs : on reprendra à la réouverture
+    const { data } = await sb.from('reves').select('restitution, lecture_statut, lecture_debut, nom').eq('id', id).maybeSingle();
+    if (state.view !== 'restituting' || !state.reve || state.reve.id !== id) return;
+    if (data) {
+      Object.assign(state.reve, data);
+      const j = (state.journal || []).find(x => x.id === id); if (j) Object.assign(j, data);
+      if (data.restitution && data.lecture_statut !== 'en_cours') { state.view = 'restitution'; render(); return; }
+      if (lectureEchouee(state.reve)) { state.view = 'restitution-error'; render(); return; }
+    }
+    suiviLecture = setTimeout(tour, 4000);
+  };
+  suiviLecture = setTimeout(tour, 4000);
 }
 
 function renderRestituting() {
@@ -1024,6 +1032,7 @@ function renderRestituting() {
       <div class="loading-block">
         <div class="spinner"></div>
         <div>mykeros prend le temps de relier les fils…</div>
+        <div style="font-size:12px;color:var(--ink-faint);margin-top:10px;max-width:280px;text-align:center">Vous pouvez quitter l'app : la lecture continue et vous attendra dans votre journal.</div>
       </div>
     </div>
   `);
@@ -1285,8 +1294,8 @@ async function goJournal() {
   const uid = state.session.user.id;
   const [{ data, error }, { data: syn }] = await Promise.all([
     // liste allégée : la lecture (restitution) n'est chargée qu'à l'ouverture d'un rêve
-    sb.from('reves').select('id, user_id, numero, date, date_precision, nom, sentiment, contexte, lecture, tier_utilise, transcription, created_at, avant_m, commentaire, commentaire_at').eq('user_id', uid).order('date', { ascending: false }).order('created_at', { ascending: false }),
-    sb.from('syntheses').select('created_at, nb_reves').eq('user_id', uid).order('created_at', { ascending: false }).limit(1),
+    sb.from('reves').select('id, user_id, numero, date, date_precision, nom, sentiment, contexte, lecture, tier_utilise, transcription, lecture_statut, lecture_debut, created_at, avant_m, commentaire, commentaire_at').eq('user_id', uid).order('date', { ascending: false }).order('created_at', { ascending: false }),
+    sb.from('syntheses').select('created_at, nb_reves').eq('user_id', uid).eq('statut', 'ok').order('created_at', { ascending: false }).limit(1),
   ]);
   state.journal = error ? [] : data;
   { // numérotation indépendante : av. LL (L miroir) = numéro stocké (numéro du journal papier, sinon suite propre) ; mykeros (#1 = le plus ancien)
@@ -1328,7 +1337,7 @@ function journalRowHtml(r) {
               <span class="num">${r.avant_m ? 'av.' + r.rang : '#' + r.rang}</span>
               <span class="meta">
                 <div class="name">${escapeHtml(r.nom || (r.avant_m ? excerpt(r.transcription, 7) : 'Sans titre'))}</div>
-                <div class="date">${fmtDateR(r)}${r.avant_m ? ` · <span class="avm">${AV_LABEL}</span>` : (r.sentiment ? ' · ' + escapeHtml(r.sentiment) : '')}</div>
+                <div class="date">${fmtDateR(r)}${r.avant_m ? ` · <span class="avm">${AV_LABEL}</span>` : (r.sentiment ? ' · ' + escapeHtml(r.sentiment) : '')}${lectureEnCours(r) ? ' · lecture en cours…' : ''}</div>
                 <div class="hit"></div>
               </span>
             </button>`;
@@ -1411,10 +1420,13 @@ function renderJournal() {
       if (!reve) return;
       if (reve.restitution === undefined) {
         btn.style.opacity = '.5';
-        const { data } = await sb.from('reves').select('restitution').eq('id', reve.id).maybeSingle();
+        const { data } = await sb.from('reves').select('restitution, lecture_statut, lecture_debut, nom').eq('id', reve.id).maybeSingle();
         reve.restitution = data ? data.restitution : null;
+        if (data) { reve.lecture_statut = data.lecture_statut; reve.lecture_debut = data.lecture_debut; if (data.nom) reve.nom = data.nom; }
       }
       state.reve = reve;
+      if (!reve.restitution && lectureEnCours(reve)) { state.view = 'restituting'; render(); suivreLecture(reve.id); return; }
+      if (lectureEchouee(reve)) { state.view = 'restitution-error'; render(); return; }
       state.view = 'restitution';
       render();
     };
@@ -1554,10 +1566,13 @@ async function renderSynthese() {
   const uid = state.session.user.id;
   const [{ count }, { data: last }] = await Promise.all([
     sb.from('reves').select('id', { count: 'exact', head: true }).eq('user_id', uid),
-    sb.from('syntheses').select('id, created_at, nb_reves, contenu').eq('user_id', uid).order('created_at', { ascending: false }).limit(1),
+    sb.from('syntheses').select('id, created_at, nb_reves, contenu, statut').eq('user_id', uid).order('created_at', { ascending: false }).limit(10),
   ]);
   const nb = count || 0;
-  const current = last && last[0];
+  const current = (last || []).find(x => x.statut === 'ok' && x.contenu);
+  // Synthèse lancée côté serveur et pas encore terminée (au-delà de 8 minutes, on la considère comme échouée)
+  const SYN_DELAI = 8 * 60 * 1000;
+  let enCours = (last || []).find(x => x.statut === 'en_cours' && Date.now() - new Date(x.created_at).getTime() < SYN_DELAI && (!current || new Date(x.created_at) > new Date(current.created_at)));
   let refl = {};
   const loadRefl = async (syn) => {
     refl = {};
@@ -1571,8 +1586,9 @@ async function renderSynthese() {
     const enough = nb >= SYNTHESE_MIN;
     body.innerHTML = `
       <div id="syn-msg"></div>
+      ${enCours ? `<div class="loading-block" style="padding:18px 0 22px"><div class="spinner"></div><div>Synthèse en cours : mykeros lit vos rêves… (une à deux minutes)</div><div style="font-size:12px;color:var(--ink-faint);margin-top:8px;max-width:280px;text-align:center">Vous pouvez quitter l'app : elle vous attendra ici.</div></div>` : ''}
       ${syn ? `<p class="syn-meta">Générée le ${fmtDate(syn.created_at)} · ${syn.nb_reves} rêves</p>${syntheseBodyHtml(syn.contenu, syn.id, refl)}` : ''}
-      ${!enough ? `<div class="journal-empty" style="margin-top:20px">Il faut au moins ${SYNTHESE_MIN} rêves pour une synthèse. Vous en avez ${nb}.</div>` : `
+      ${enCours ? '' : !enough ? `<div class="journal-empty" style="margin-top:20px">Il faut au moins ${SYNTHESE_MIN} rêves pour une synthèse. Vous en avez ${nb}.</div>` : `
         <div class="footer-actions"><button class="btn ${syn ? 'btn-ghost' : 'btn-primary'} btn-block" id="syn-go">${syn ? 'Actualiser la synthèse' : 'Générer la synthèse'}</button></div>`}
       ${syn ? `<div class="to-top-wrap"><button class="to-top" id="syn-top" aria-label="Revenir en haut"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 15 12 9 18 15"/></svg></button></div>` : ''}
     `;
@@ -1590,23 +1606,41 @@ async function renderSynthese() {
     if (syn) bindPistes(syn, refl, () => draw(syn));
     const go = $('#syn-go');
     if (go) go.onclick = async () => {
-      go.disabled = true; go.textContent = 'On lit vos rêves… (environ une minute)';
-      const { data, error } = await sb.functions.invoke('synthese', { body: {} });
-      if (error || !data || !data.contenu) {
+      go.disabled = true; go.textContent = 'Lancement…';
+      const { data, error } = await sb.functions.invoke('synthese', { body: { async: true } });
+      if (error || !data || !data.id) {
         let detail = '';
         try { const j = await error.context.json(); detail = j.error || ''; } catch (_) {}
         draw(syn);
         const msg = detail === 'premium_requis' ? 'La synthèse est réservée aux comptes Premium.'
           : detail === 'pas_assez_de_reves' ? `Il faut au moins ${SYNTHESE_MIN} rêves.`
-          : 'La synthèse n\'a pas pu être générée. Réessayez dans un instant.';
+          : 'La synthèse n\'a pas pu être lancée. Réessayez dans un instant.';
         $('#syn-msg').innerHTML = `<div class="msg error" style="margin-bottom:12px">${escapeHtml(msg)}</div>`;
         return;
       }
-      refl = {};
-      draw(data);
+      enCours = data;
+      draw(syn);
+      suivre(syn);
     };
   };
+  // Vérifie toutes les 5 secondes si la synthèse lancée est prête (tant que l'on reste sur cette page)
+  const suivre = (prev) => {
+    const tour = async () => {
+      if (state.view !== 'synthese' || !enCours || !document.body.contains(body)) return;
+      const { data: row } = await sb.from('syntheses').select('id, created_at, nb_reves, contenu, statut').eq('id', enCours.id).maybeSingle();
+      if (state.view !== 'synthese' || !document.body.contains(body)) return;
+      if (row && row.statut === 'ok' && row.contenu) { enCours = null; refl = {}; state.lastSyn = { created_at: row.created_at, nb_reves: row.nb_reves }; draw(row); return; }
+      if (!row || row.statut === 'erreur' || Date.now() - new Date(enCours.created_at).getTime() > SYN_DELAI) {
+        enCours = null; draw(prev);
+        $('#syn-msg').innerHTML = `<div class="msg error" style="margin-bottom:12px">La synthèse n'a pas pu être générée. Réessayez dans un instant.</div>`;
+        return;
+      }
+      setTimeout(tour, 5000);
+    };
+    setTimeout(tour, 5000);
+  };
   draw(current);
+  if (enCours) suivre(current);
 }
 
 // ---------- COMPTE ----------
@@ -1742,7 +1776,7 @@ function render() {
 }
 
 // ---------- MISE À JOUR AUTOMATIQUE (app installée) ----------
-const APP_VERSION = '2026-10-21c';
+const APP_VERSION = '2026-10-21d';
 const SAFE_VIEWS = ['auth', 'journal', 'compte', 'synthese', 'legal', 'avant-ok', 'restitution'];
 async function checkUpdate() {
   if (location.protocol.indexOf('http') !== 0) return;
