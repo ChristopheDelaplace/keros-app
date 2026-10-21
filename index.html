@@ -1070,7 +1070,7 @@ function renderAvantRead(reve) {
       <div class="auth-image"><img src="mykeros-figure-cutout.png" alt=""></div>
       <div class="rest-header">
         <h2 class="rest-title display">${escapeHtml(fmtDateR(reve))}</h2>
-        <span class="avm">${AV_LABEL} ${reve.rang || ''}</span>
+        <span class="avm">${AV_LABEL} ${reve.rang ?? ''}</span>
       </div>
       <div class="avant-text">${escapeHtml(reve.transcription || '')}</div>
       ${journalSeul() ? '' : `<div class="rest-block"><p>Rêve d'avant mykeros : il compte dans votre synthèse. Vous pouvez aussi demander une lecture de ce rêve seul, sans associations : elle restera prudente.</p></div>`}
@@ -1227,7 +1227,7 @@ function renderRestitution(reve) {
       <div class="auth-image"><img src="mykeros-figure-cutout.png" alt=""></div>
       <div class="rest-header">
         <h2 class="rest-title display">${escapeHtml(reve.nom || 'Sans titre')}</h2>
-        ${reve.avant_m ? `<span class="avm">${AV_LABEL} ${reve.rang || ''} · ${escapeHtml(fmtDateR(reve))}</span>` : (reve.sentiment ? `<span class="rest-tag">◐ ${escapeHtml(reve.sentiment)}</span>` : '')}
+        ${reve.avant_m ? `<span class="avm">${AV_LABEL} ${reve.rang ?? ''} · ${escapeHtml(fmtDateR(reve))}</span>` : (reve.sentiment ? `<span class="rest-tag">◐ ${escapeHtml(reve.sentiment)}</span>` : '')}
       </div>
       ${r.motif_recurrent && r.motif_recurrent.present ? `
         <div class="motif-card"><span class="t">${escapeHtml(r.motif_recurrent.texte)}</span></div>
