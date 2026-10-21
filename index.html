@@ -284,6 +284,15 @@
   .danger-link { background: none; border: none; color: var(--danger); font-size: 12.5px; cursor: pointer; font-family: 'Work Sans', sans-serif; text-decoration: underline; padding: 6px; }
   .account-section { margin-top: 18px; display: flex; flex-direction: column; gap: 10px; text-align: left; }
   .account-section .row { display: flex; flex-direction: column; gap: 6px; }
+  .jo-toggle { display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--card); cursor: pointer; }
+  .jo-toggle input { margin-top: 3px; accent-color: var(--accent); width: 18px; height: 18px; flex-shrink: 0; }
+  .jo-toggle .t { font-size: 14px; font-weight: 600; color: var(--ink); }
+  .jo-toggle .d { font-size: 12px; line-height: 1.5; color: var(--ink-soft); margin-top: 3px; }
+  .kw-list { display: flex; flex-direction: column; gap: 8px; }
+  .kw-item { background: var(--card-2); border-radius: 10px; padding: 9px 12px; }
+  .kw-item .k { font-size: 12px; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: .04em; }
+  .kw-item .a { font-size: 14px; line-height: 1.55; color: var(--ink); margin-top: 2px; white-space: pre-wrap; }
+  .jo-note { font-size: 12px; color: var(--ink-faint); text-align: center; margin: 4px 0 14px; }
   .account-section .mail { font-size: 13px; color: var(--ink-soft); }
 
   .footer-glyph.on { pointer-events: auto; cursor: pointer; padding: 10px 24px; bottom: 2px; left: 50%; right: auto; transform: translateX(-50%); }
@@ -942,7 +951,7 @@ function renderContexte() {
       <div class="step-card">
         <div class="a-label">Quelque chose de notable ces dernières 24h, ou à venir dans les 72h ?</div>
         <textarea class="kw-input" id="contexte-input" placeholder="Rien de notable, ou bien…"></textarea>
-        <button class="kw-next" id="contexte-next">Voir la restitution →</button>
+        <button class="kw-next" id="contexte-next">${journalSeul() ? 'Enregistrer le rêve →' : 'Voir la restitution →'}</button>
       </div>
     </div>
   `);
@@ -952,6 +961,8 @@ function renderContexte() {
     btn.disabled = true; btn.textContent = 'On y réfléchit…';
     const contexte = $('#contexte-input').value.trim();
     await sb.from('reves').update({ contexte }).eq('id', state.reve.id);
+    state.reve.contexte = contexte;
+    if (journalSeul()) { state.view = 'restitution'; render(); return; }
     await runRestitution(contexte);
   };
 }
@@ -1046,9 +1057,9 @@ function renderAvantRead(reve) {
         <span class="avm">${AV_LABEL} ${reve.rang || ''}</span>
       </div>
       <div class="avant-text">${escapeHtml(reve.transcription || '')}</div>
-      <div class="rest-block"><p>Rêve d'avant mykeros : il compte dans votre synthèse. Vous pouvez aussi demander une lecture de ce rêve seul, sans associations : elle restera prudente.</p></div>
+      ${journalSeul() ? '' : `<div class="rest-block"><p>Rêve d'avant mykeros : il compte dans votre synthèse. Vous pouvez aussi demander une lecture de ce rêve seul, sans associations : elle restera prudente.</p></div>`}
       <div class="footer-actions" style="flex-direction:column">
-        <button class="btn btn-primary btn-block" id="av-read">Obtenir une lecture</button>
+        ${journalSeul() ? '' : `<button class="btn btn-primary btn-block" id="av-read">Obtenir une lecture</button>`}
         <button class="btn btn-ghost btn-block" id="av-back">Retour au journal</button>
       </div>
       <div style="text-align:center;margin-top:10px"><button class="danger-link" id="del-dream">Supprimer ce rêve</button></div>
@@ -1056,7 +1067,7 @@ function renderAvantRead(reve) {
   `);
   bindTopNav();
   $('#av-back').onclick = goJournal;
-  $('#av-read').onclick = () => { state.reve = reve; runRestitution(reve.contexte || ''); };
+  if ($('#av-read')) $('#av-read').onclick = () => { state.reve = reve; runRestitution(reve.contexte || ''); };
   $('#del-dream').onclick = async () => {
     if (!confirm('Supprimer définitivement ce rêve ?')) return;
     const { error } = await sb.from('reves').delete().eq('id', reve.id);
@@ -1066,6 +1077,21 @@ function renderAvantRead(reve) {
 }
 
 // Réaction du rêveur à la lecture : enregistrée sur le rêve, prioritaire dans la synthèse
+// Mode journal seul : pas de lecture IA, pas de Kéros, pas de synthèse (pour les personnes en analyse)
+const journalSeul = () => !!(state.session && state.session.user && state.session.user.user_metadata && state.session.user.user_metadata.journal_seul);
+async function bindKwAssoc(reve) {
+  const box = $('#rest-kw');
+  if (!box) return;
+  const { data } = await sb.from('mots_cles').select('texte, ordre, associations(texte)').eq('reve_id', reve.id).order('ordre');
+  const rows = (data || []).filter(m => m.texte);
+  const ctx = (reve.contexte || '').trim();
+  if (!rows.length && !ctx) { box.remove(); return; }
+  box.innerHTML = (rows.length ? `<h3>Mots-clés et associations</h3><div class="kw-list">${rows.map(m => {
+      const a = m.associations && m.associations[0] && m.associations[0].texte;
+      return `<div class="kw-item"><div class="k">${escapeHtml(m.texte)}</div>${a ? `<div class="a">${escapeHtml(a)}</div>` : ''}</div>`;
+    }).join('')}</div>` : '') +
+    (ctx ? `<h3 style="margin-top:16px">Contexte</h3><p>${escapeHtml(ctx)}</p>` : '');
+}
 // Récit du rêve : relire, copier, corriger
 function bindRecit(reve) {
   const box = $('#rest-recit');
@@ -1175,8 +1201,9 @@ function bindFigure(reve) {
   });
 }
 function renderRestitution(reve) {
-  if (reve.avant_m && !reve.restitution) return renderAvantRead(reve);
-  const r = reve.restitution || { sections: [], motif_recurrent: { present: false } };
+  const jo = journalSeul();
+  if (reve.avant_m && (!reve.restitution || jo)) return renderAvantRead(reve);
+  const r = jo ? { sections: [], motif_recurrent: { present: false } } : (reve.restitution || { sections: [], motif_recurrent: { present: false } });
   const isStandard = (state.profile && state.profile.tier) !== 'premium';
   h(`
     ${topNav(true)}
@@ -1190,7 +1217,8 @@ function renderRestitution(reve) {
         <div class="motif-card"><span class="t">${escapeHtml(r.motif_recurrent.texte)}</span></div>
       ` : ''}
       ${reve.id && reve.transcription ? `<div class="rest-block" id="rest-recit"></div>` : ''}
-      ${(r.sections || []).length === 0 ? `
+      ${jo ? `<div class="rest-block" id="rest-kw"></div><p class="jo-note">Mode journal seul : pas de lecture (réglable dans Mon compte).</p>` : ''}
+      ${!jo && (r.sections || []).length === 0 ? `
         <div class="msg error" style="margin:12px 0;">La lecture de ce rêve n'a pas pu être générée. <button class="link-btn" id="retry-empty">Relancer l\'analyse</button></div>
       ` : ''}
       ${(r.sections || []).map(s => `
@@ -1198,7 +1226,7 @@ function renderRestitution(reve) {
       `).join('')}
       ${reve.id && (r.sections || []).length ? `<div class="fig-dialog" id="fig-dialog"></div>` : ''}
       ${reve.id && (r.sections || []).length ? `<div class="rest-block" id="rest-comment"></div>` : ''}
-      ${isStandard ? `
+      ${isStandard && !jo ? `
         <div class="premium-cta">
           <span class="txt">Passer en Premium pour nommer ces figures et approfondir la lecture.</span>
           <button class="btn btn-primary" id="premium-btn">Bientôt</button>
@@ -1212,6 +1240,7 @@ function renderRestitution(reve) {
   `);
   bindTopNav();
   bindRecit(reve);
+  bindKwAssoc(reve);
   bindComment(reve);
   bindFigure(reve);
   const dd = $('#del-dream');
@@ -1274,14 +1303,14 @@ function renderJournal() {
         <div class="journal-title display">Journal</div>
       </div>
       ${state.journal.length === 0 ? `<div class="journal-empty">Aucun rêve consigné pour l'instant.</div>` : `
-        <button class="syn-card" id="go-synthese">
+        ${journalSeul() ? '' : `<button class="syn-card" id="go-synthese">
           <span class="gl">${GLYPH(24).replace('viewBox="0 0 100 100"', 'viewBox="14 10 72 52"').replace(/height="\d+"/, 'height="16"')}</span>
           <span class="meta">
             <div class="name">Synthèse</div>
             ${state.lastSyn ? `<div class="sub">${fmtDate(state.lastSyn.created_at)} · ${state.lastSyn.nb_reves} rêves</div>` : ''}
           </span>
           <span class="chev"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg></span>
-        </button>
+        </button>`}
         <div class="journal-list">
           ${state.journal.map(r => `
             <button class="journal-row" data-id="${r.id}">
@@ -1514,6 +1543,7 @@ function renderCompte() {
         <div class="field"><label>Genre <span style="opacity:.6">(optionnel)</span></label>
           <select id="acc-genre"><option value="">Je préfère ne pas dire</option><option value="femme"${genre === 'femme' ? ' selected' : ''}>Femme</option><option value="homme"${genre === 'homme' ? ' selected' : ''}>Homme</option><option value="autre"${genre === 'autre' ? ' selected' : ''}>Autre</option></select>
         </div>
+        <label class="jo-toggle"><input type="checkbox" id="acc-jo"${u.user_metadata?.journal_seul ? ' checked' : ''}><span><div class="t">Mode journal seul</div><div class="d">Pour celles et ceux qui sont en analyse : vous consignez vos rêves, mots-clés et associations, sans lecture, sans dialogue avec Kéros ni synthèse. Vous apportez votre matériau en séance, sans interprétation toute faite. Vos lectures déjà faites sont conservées et réapparaissent si vous désactivez ce mode.</div></span></label>
         <button class="btn btn-ghost btn-block" id="acc-export">Exporter mes données</button>
         <div style="text-align:center"><button class="danger-link" id="acc-delete">Supprimer mon compte</button></div>
       </div>
@@ -1526,6 +1556,13 @@ function renderCompte() {
   $('#acc-genre').onchange = async (e) => {
     const { error } = await sb.auth.updateUser({ data: { genre: e.target.value } });
     if (error) msg('error', error.message); else msg('ok', 'Genre enregistré.');
+  };
+  $('#acc-jo').onchange = async (e) => {
+    const on = e.target.checked;
+    const { error } = await sb.auth.updateUser({ data: { journal_seul: on } });
+    if (error) { e.target.checked = !on; return msg('error', error.message); }
+    if (state.session && state.session.user) state.session.user.user_metadata = { ...(state.session.user.user_metadata || {}), journal_seul: on };
+    msg('ok', on ? 'Mode journal seul activé.' : 'Lectures, Kéros et synthèse réactivés.');
   };
   $('#acc-export').onclick = async () => {
     const { data, error } = await sb.from('reves').select('*, mots_cles(*, associations(*))').eq('user_id', u.id).order('numero');
@@ -1624,7 +1661,7 @@ function render() {
 }
 
 // ---------- MISE À JOUR AUTOMATIQUE (app installée) ----------
-const APP_VERSION = '2026-10-20b';
+const APP_VERSION = '2026-10-21a';
 const SAFE_VIEWS = ['auth', 'journal', 'compte', 'synthese', 'legal', 'avant-ok', 'restitution'];
 async function checkUpdate() {
   if (location.protocol.indexOf('http') !== 0) return;
