@@ -387,6 +387,8 @@ async function init() {
   sb.auth.onAuthStateChange((_event, session) => {
     state.session = session;
     if (_event === 'PASSWORD_RECOVERY') { state.recovery = true; state.view = 'reset'; render(); return; }
+    // Rafraîchissement du jeton, retour au premier plan, mise à jour du compte : on reste où l'on est
+    if (session && state.profile && state.view && state.view !== 'auth') return;
     if (session) { loadProfileAndGo(); } else { state.view = 'auth'; render(); }
   });
   const { data } = await sb.auth.getSession();
@@ -404,7 +406,45 @@ async function loadProfileAndGo() {
     ({ data: profile } = await sb.from('profiles').select('*').eq('id', uid).maybeSingle());
   }
   state.profile = profile;
+  if (await reprendreDernierePage()) return;
   state.view = 'recueil';
+  render();
+}
+
+// Mémorise la page affichée pour y revenir si le téléphone a fermé l'app en arrière-plan
+const DERNIERE_PAGE = 'mk_derniere_page';
+const PAGES_REPRISES = ['journal', 'restitution', 'restituting', 'restitution-error', 'synthese', 'compte'];
+function memoriserPage() {
+  try {
+    if (!state.session) return;
+    if (PAGES_REPRISES.includes(state.view)) localStorage.setItem(DERNIERE_PAGE, JSON.stringify({ v: state.view, id: state.reve && state.reve.id, t: Date.now() }));
+    else if (state.view === 'recueil') localStorage.removeItem(DERNIERE_PAGE);
+  } catch (e) {}
+}
+async function reprendreDernierePage() {
+  let p = null;
+  try { p = JSON.parse(localStorage.getItem(DERNIERE_PAGE) || 'null'); } catch (e) {}
+  if (!p || !PAGES_REPRISES.includes(p.v) || Date.now() - (p.t || 0) > 12 * 3600 * 1000) return false;
+  if (p.v === 'synthese' || p.v === 'compte') { state.view = p.v; render(); return true; }
+  await goJournal();
+  if (p.v === 'journal' || !p.id) return true;
+  const reve = (state.journal || []).find(r => r.id === p.id);
+  if (reve) await ouvrirReve(reve);
+  return true;
+}
+// Ouvre un rêve du journal : charge sa lecture, ou suit la lecture en cours
+async function ouvrirReve(reve) {
+  if (reve.restitution === undefined) {
+    const { data } = await sb.from('reves').select('restitution, lecture_statut, lecture_debut, nom').eq('id', reve.id).maybeSingle();
+    reve.restitution = data ? data.restitution : null;
+    if (data) { reve.lecture_statut = data.lecture_statut; reve.lecture_debut = data.lecture_debut; if (data.nom) reve.nom = data.nom; }
+  }
+  state.reve = reve;
+  // l'année de ce rêve reste ouverte au retour dans le journal
+  try { if (state.joOpen && reve.date) state.joOpen.add(Number(String(reve.date).slice(0, 4))); } catch (e) {}
+  if (!reve.restitution && lectureEnCours(reve)) { state.view = 'restituting'; render(); suivreLecture(reve.id); return; }
+  if (lectureEchouee(reve)) { state.view = 'restitution-error'; render(); return; }
+  state.view = 'restitution';
   render();
 }
 
@@ -1418,17 +1458,8 @@ function renderJournal() {
     btn.onclick = async () => {
       const reve = state.journal.find(r => r.id === btn.dataset.id);
       if (!reve) return;
-      if (reve.restitution === undefined) {
-        btn.style.opacity = '.5';
-        const { data } = await sb.from('reves').select('restitution, lecture_statut, lecture_debut, nom').eq('id', reve.id).maybeSingle();
-        reve.restitution = data ? data.restitution : null;
-        if (data) { reve.lecture_statut = data.lecture_statut; reve.lecture_debut = data.lecture_debut; if (data.nom) reve.nom = data.nom; }
-      }
-      state.reve = reve;
-      if (!reve.restitution && lectureEnCours(reve)) { state.view = 'restituting'; render(); suivreLecture(reve.id); return; }
-      if (lectureEchouee(reve)) { state.view = 'restitution-error'; render(); return; }
-      state.view = 'restitution';
-      render();
+      if (reve.restitution === undefined) btn.style.opacity = '.5';
+      await ouvrirReve(reve);
     };
   });
 }
@@ -1750,6 +1781,7 @@ function renderLegal() {
 // ---------- RENDER DISPATCH ----------
 const GLYPH_HOME_VIEWS = ['journal', 'compte', 'synthese', 'restitution', 'avant-ok', 'legal'];
 function render() {
+  memoriserPage();
   const fg = document.getElementById('footer-glyph');
   if (fg) fg.classList.toggle('on', !!state.session && GLYPH_HOME_VIEWS.includes(state.view));
   switch (state.view) {
