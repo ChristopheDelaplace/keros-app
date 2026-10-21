@@ -1284,7 +1284,8 @@ async function goJournal() {
   render();
   const uid = state.session.user.id;
   const [{ data, error }, { data: syn }] = await Promise.all([
-    sb.from('reves').select('*').eq('user_id', uid).order('date', { ascending: false }).order('created_at', { ascending: false }),
+    // liste allégée : la lecture (restitution) n'est chargée qu'à l'ouverture d'un rêve
+    sb.from('reves').select('id, user_id, numero, date, date_precision, nom, sentiment, contexte, lecture, tier_utilise, transcription, created_at, avant_m, commentaire, commentaire_at').eq('user_id', uid).order('date', { ascending: false }).order('created_at', { ascending: false }),
     sb.from('syntheses').select('created_at, nb_reves').eq('user_id', uid).order('created_at', { ascending: false }).limit(1),
   ]);
   state.journal = error ? [] : data;
@@ -1390,8 +1391,14 @@ function renderJournal() {
   $('#journal-avant').onclick = () => { state.avantM = true; state.avantDate = { y: '', m: '', d: '' }; state.recit = ''; state.reve = null; state.view = 'recueil'; render(); };
   $('#journal-new').onclick = () => { state.avantM = false; state.view = 'recueil'; state.recit = ''; state.reve = null; render(); };
   root.querySelectorAll('.journal-row').forEach(btn => {
-    btn.onclick = () => {
+    btn.onclick = async () => {
       const reve = state.journal.find(r => r.id === btn.dataset.id);
+      if (!reve) return;
+      if (reve.restitution === undefined) {
+        btn.style.opacity = '.5';
+        const { data } = await sb.from('reves').select('restitution').eq('id', reve.id).maybeSingle();
+        reve.restitution = data ? data.restitution : null;
+      }
       state.reve = reve;
       state.view = 'restitution';
       render();
@@ -1720,7 +1727,7 @@ function render() {
 }
 
 // ---------- MISE À JOUR AUTOMATIQUE (app installée) ----------
-const APP_VERSION = '2026-10-21a';
+const APP_VERSION = '2026-10-21b';
 const SAFE_VIEWS = ['auth', 'journal', 'compte', 'synthese', 'legal', 'avant-ok', 'restitution'];
 async function checkUpdate() {
   if (location.protocol.indexOf('http') !== 0) return;
