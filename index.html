@@ -1272,9 +1272,9 @@ async function goJournal() {
     sb.from('syntheses').select('created_at, nb_reves').eq('user_id', uid).order('created_at', { ascending: false }).limit(1),
   ]);
   state.journal = error ? [] : data;
-  { // numérotation indépendante : av. LL (L miroir) (1 = le plus ancien) et mykeros (#1 = le plus ancien)
+  { // numérotation indépendante : av. LL (L miroir) = numéro stocké (numéro du journal papier, sinon suite propre) ; mykeros (#1 = le plus ancien)
     let nA = 0, nM = 0;
-    [...state.journal].reverse().forEach(r => { r.rang = r.avant_m ? ++nA : ++nM; });
+    [...state.journal].reverse().forEach(r => { r.rang = r.avant_m ? (r.numero ?? ++nA) : ++nM; });
   }
   state.avantM = false;
   state.lastSyn = (syn && syn[0]) || null;
