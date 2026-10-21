@@ -210,6 +210,15 @@
   /* Journal */
   .journal-title { font-size: 22px; margin-bottom: 16px; }
   .journal-list { display: flex; flex-direction: column; gap: 10px; }
+  .journal-groups { display: flex; flex-direction: column; gap: 8px; }
+  .jo-year > summary { list-style: none; display: flex; align-items: baseline; justify-content: space-between; cursor: pointer; padding: 10px 4px; border-bottom: 1px solid var(--card-2); }
+  .jo-year > summary::-webkit-details-marker { display: none; }
+  .jo-year > summary::before { content: '›'; display: inline-block; width: 14px; color: var(--ink-faint); transition: transform .2s; }
+  .jo-year[open] > summary::before { transform: rotate(90deg); }
+  .jo-y { font-family: 'Fraunces', serif; font-size: 18px; flex: 1; }
+  .jo-n { font-size: 12px; color: var(--ink-faint); }
+  .jo-month { margin: 12px 0 4px; }
+  .jo-m { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-faint); margin: 0 0 8px 4px; }
   .view.searching .journal-head, .view.searching .syn-card { display: none; }
   .search-box { display: flex; align-items: center; gap: 8px; border: 1px solid var(--line); border-radius: 999px; background: var(--card); color: var(--ink-faint); padding: 0 14px; margin: -41px 0 14px; }
   .search-box input { flex: 1; border: none; background: none; outline: none; color: var(--ink); font-family: 'Work Sans', sans-serif; font-size: 16px; padding: 11px 0; min-width: 0; }
@@ -297,6 +306,8 @@
 
   .footer-glyph.on { pointer-events: auto; cursor: pointer; padding: 10px 24px; bottom: 2px; left: 50%; right: auto; transform: translateX(-50%); }
   .avant-date { display: grid; grid-template-columns: 1.1fr 1.5fr 1fr; gap: 8px; width: 100%; margin-top: 16px; text-align: left; }
+  .avant-date .av-num { grid-column: 1 / -1; }
+  .avant-date .opt { color: var(--ink-faint); font-weight: normal; }
   .rest-header .avm { display: inline-block; margin-bottom: 18px; }
   .glyph-inline { display: inline-block; height: 0.8em; width: auto; aspect-ratio: 68 / 52; vertical-align: -0.02em; overflow: visible; }
   .avm { font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; color: var(--rose); background: var(--rose-soft); padding: 2px 7px; border-radius: 999px; white-space: nowrap; }
@@ -542,6 +553,7 @@ function renderRecueil() {
             <div class="field"><label for="av-y">Année</label><input id="av-y" type="number" inputmode="numeric" min="1900" max="${new Date().getFullYear()}" placeholder="ex. 1998" value="${escapeHtml(state.avantDate.y)}"></div>
             <div class="field"><label for="av-m">Mois</label><select id="av-m"><option value="">Inconnu</option>${['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'].map((n, i) => `<option value="${i + 1}"${String(state.avantDate.m) === String(i + 1) ? ' selected' : ''}>${n}</option>`).join('')}</select></div>
             <div class="field"><label for="av-d">Jour</label><select id="av-d"><option value="">—</option>${Array.from({ length: 31 }, (_, i) => `<option value="${i + 1}"${String(state.avantDate.d) === String(i + 1) ? ' selected' : ''}>${i + 1}</option>`).join('')}</select></div>
+            <div class="field av-num"><label for="av-n">N° dans votre journal <span class="opt">(facultatif)</span></label><input id="av-n" type="number" inputmode="numeric" min="1" placeholder="ex. 276" value="${escapeHtml(state.avantDate.n || '')}"></div>
           </div>` : ''}
         </div>
         <div class="mic-wrap">
@@ -572,8 +584,8 @@ function renderRecueil() {
   const defaultHint = state.avantM ? 'Une date approximative suffit : seule l\'année est nécessaire.' : 'Parlez comme si vous y étiez encore. On transcrit pendant que le rêve est frais.';
   micHint.textContent = defaultHint;
   if (state.avantM) {
-    const sync = () => { state.avantDate = { y: $('#av-y').value, m: $('#av-m').value, d: $('#av-d').value }; };
-    ['#av-y', '#av-m', '#av-d'].forEach(id => $(id).addEventListener('input', sync));
+    const sync = () => { state.avantDate = { y: $('#av-y').value, m: $('#av-m').value, d: $('#av-d').value, n: $('#av-n').value }; };
+    ['#av-y', '#av-m', '#av-d', '#av-n'].forEach(id => $(id).addEventListener('input', sync));
   }
 
   function showTextArea(prefill) {
@@ -651,6 +663,8 @@ function renderRecueil() {
       else if (d && !m) err = 'Indiquez aussi le mois, ou retirez le jour.';
       else if (m && d && new Date(y, m - 1, d).getMonth() !== m - 1) err = 'Cette date n\'existe pas.';
       else if (new Date(y, (m || 1) - 1, d || 1) > now) err = 'Ce rêve ne peut pas être dans le futur.';
+      const nJ = String(state.avantDate.n || '').trim() ? parseInt(state.avantDate.n, 10) : null;
+      if (!err && nJ !== null && !(nJ >= 1)) err = 'Le numéro du journal doit être un nombre entier positif.';
       // Un rêve postérieur à l'inscription n'est pas « d'avant mykeros » : il rejoint le journal normal (#n)
       const signup = state.profile && state.profile.created_at ? new Date(state.profile.created_at) : null;
       if (!err && signup) {
@@ -682,7 +696,9 @@ function renderRecueil() {
         date: `${y}-${mm}-${dd}`,
         date_precision: d ? 'jour' : (m ? 'mois' : 'annee'),
         avant_m: true,
+        ...(nJ ? { numero: nJ } : {}),
       });
+      if (error && error.code === '23505') { micHint.textContent = `Le numéro ${nJ} est déjà utilisé par un autre rêve d'avant mykeros.`; btn2.disabled = false; btn2.textContent = 'Enregistrer'; return; }
       if (error) { alert('Erreur à l\'enregistrement du rêve : ' + (error.message || error)); btn2.disabled = false; btn2.textContent = 'Enregistrer'; return; }
       state.recit = '';
       state.view = 'avant-ok';
@@ -1287,6 +1303,47 @@ function renderJournalLoading() {
   bindTopNav();
 }
 
+// Au-delà de JOURNAL_GROUP_MIN rêves, le journal se replie par année puis par mois
+const JOURNAL_GROUP_MIN = 30;
+const MOIS_NOMS = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+function journalRowHtml(r) {
+  return `
+            <button class="journal-row" data-id="${r.id}">
+              <span class="num">${r.avant_m ? 'av.' + r.rang : '#' + r.rang}</span>
+              <span class="meta">
+                <div class="name">${escapeHtml(r.nom || (r.avant_m ? excerpt(r.transcription, 7) : 'Sans titre'))}</div>
+                <div class="date">${fmtDateR(r)}${r.avant_m ? ` · <span class="avm">${AV_LABEL}</span>` : (r.sentiment ? ' · ' + escapeHtml(r.sentiment) : '')}</div>
+                <div class="hit"></div>
+              </span>
+            </button>`;
+}
+function journalListHtml() {
+  const list = state.journal;
+  if (list.length <= JOURNAL_GROUP_MIN) return `<div class="journal-list">${list.map(journalRowHtml).join('')}</div>`;
+  // Regroupement : années (repliables), puis mois ; le journal est déjà trié du plus récent au plus ancien
+  const years = [];
+  list.forEach(r => {
+    const [y, m] = String(r.date || '').split('-').map(Number);
+    const yKey = y || 0, mKey = (r.date_precision === 'annee' || !m) ? 0 : m;
+    let Y = years[years.length - 1];
+    if (!Y || Y.y !== yKey) { Y = { y: yKey, months: [] }; years.push(Y); }
+    let M = Y.months.find(x => x.m === mKey);
+    if (!M) { M = { m: mKey, rows: [] }; Y.months.push(M); }
+    M.rows.push(r);
+  });
+  if (!state.joOpen) state.joOpen = new Set(years.length ? [years[0].y] : []);
+  return `<div class="journal-groups">${years.map(Y => {
+    const n = Y.months.reduce((a, M) => a + M.rows.length, 0);
+    return `<details class="jo-year" data-y="${Y.y}"${state.joOpen.has(Y.y) ? ' open' : ''}>
+      <summary><span class="jo-y">${Y.y || 'Sans date'}</span><span class="jo-n">${n} rêve${n > 1 ? 's' : ''}</span></summary>
+      ${Y.months.map(M => `<div class="jo-month">
+        <div class="jo-m">${M.m ? MOIS_NOMS[M.m - 1] : 'mois inconnu'}</div>
+        <div class="journal-list">${M.rows.map(journalRowHtml).join('')}</div>
+      </div>`).join('')}
+    </details>`;
+  }).join('')}</div>`;
+}
+
 function renderJournal() {
   h(`
     ${topNav(false)}
@@ -1311,18 +1368,7 @@ function renderJournal() {
           </span>
           <span class="chev"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg></span>
         </button>`}
-        <div class="journal-list">
-          ${state.journal.map(r => `
-            <button class="journal-row" data-id="${r.id}">
-              <span class="num">${r.avant_m ? 'av.' + r.rang : '#' + r.rang}</span>
-              <span class="meta">
-                <div class="name">${escapeHtml(r.nom || (r.avant_m ? excerpt(r.transcription, 7) : 'Sans titre'))}</div>
-                <div class="date">${fmtDateR(r)}${r.avant_m ? ` · <span class="avm">${AV_LABEL}</span>` : (r.sentiment ? ' · ' + escapeHtml(r.sentiment) : '')}</div>
-                <div class="hit"></div>
-              </span>
-            </button>
-          `).join('')}
-        </div>
+        ${journalListHtml()}
       `}
       <div class="footer-actions">
         <button class="btn btn-primary btn-block" id="journal-new">Raconter un nouveau rêve</button>
@@ -1334,6 +1380,11 @@ function renderJournal() {
   bindTopNav();
   bindLegalLinks('journal');
   bindJournalSearch();
+  root.querySelectorAll('details.jo-year').forEach(d => d.addEventListener('toggle', () => {
+    if (root.querySelector('.view.searching')) return;
+    const y = Number(d.dataset.y);
+    if (d.open) state.joOpen.add(y); else state.joOpen.delete(y);
+  }));
   $('#go-compte').onclick = () => { state.view = 'compte'; render(); };
   const gs = $('#go-synthese'); if (gs) gs.onclick = () => { state.view = 'synthese'; render(); };
   $('#journal-avant').onclick = () => { state.avantM = true; state.avantDate = { y: '', m: '', d: '' }; state.recit = ''; state.reve = null; state.view = 'recueil'; render(); };
@@ -1379,6 +1430,14 @@ function bindJournalSearch() {
       if (inTitle) name.innerHTML = hitSnippet(r.nom, q);
       else if (f) hit.innerHTML = (f[0] ? `<span class="hit-k">${f[0]} · </span>` : '') + hitSnippet(f[1], q);
       if (inTitle || f) n++;
+    });
+    root.querySelectorAll('details.jo-year').forEach(d => {
+      d.querySelectorAll('.jo-month').forEach(m => {
+        m.style.display = [...m.querySelectorAll('.journal-row')].some(b => b.style.display !== 'none') ? '' : 'none';
+      });
+      const any = [...d.querySelectorAll('.journal-row')].some(b => b.style.display !== 'none');
+      d.style.display = any ? '' : 'none';
+      d.open = q ? true : (state.joOpen ? state.joOpen.has(Number(d.dataset.y)) : d.open);
     });
     root.querySelector('.view').classList.toggle('searching', !!q);
     $('#search-count').textContent = q ? (n ? `${n} rêve${n > 1 ? 's' : ''} contien${n > 1 ? 'nent' : 't'} « ${input.value.trim()} »` : `Aucun rêve ne contient « ${input.value.trim()} »`) : '';
