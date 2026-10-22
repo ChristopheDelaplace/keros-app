@@ -13,7 +13,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400..600&family=Work+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400..600&family=GFS+Neohellenic:wght@400;700&family=Work+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
   :root {
     --ink: #211f33;
@@ -49,14 +49,15 @@
     margin: 0;
     background: var(--ground);
     color: var(--ink);
-    font-family: 'Work Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-family: 'GFS Neohellenic', 'Work Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size-adjust: 0.52;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     min-height: 100%;
   }
-  h1, h2, h3, .display { font-family: 'Fraunces', Georgia, serif; font-weight: 500; text-wrap: balance; letter-spacing: -0.01em; margin: 0; }
+  h1, h2, h3, .display { font-family: 'GFS Neohellenic', Georgia, serif; font-weight: 500; text-wrap: balance; letter-spacing: -0.01em; margin: 0; }
 
   .frame {
     width: 100%;
@@ -163,7 +164,7 @@
   .step-title { font-size: 22px; margin-bottom: 18px; text-align: center; }
   .step-card { background: var(--accent-soft); border: 1px solid var(--accent); border-radius: 16px; padding: 16px; margin-top: 8px; }
   .step-card .k-label { font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent); }
-  .step-card .k-word { font-family: 'Fraunces', serif; font-size: 19px; margin: 4px 0 12px; }
+  .step-card .k-word { font-family: 'GFS Neohellenic', serif; font-size: 19px; margin: 4px 0 12px; }
   .step-card .a-label { font-size: 11px; font-weight: 600; color: var(--ink-soft); margin-bottom: 6px; }
   .chip-grid { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 16px; }
   .chip-grid .chip { flex: 1 1 auto; text-align: center; padding-left: 10px; padding-right: 10px; }
@@ -215,7 +216,7 @@
   .jo-year > summary::-webkit-details-marker { display: none; }
   .jo-year > summary::before { content: '›'; display: inline-block; width: 14px; color: var(--ink-faint); transition: transform .2s; }
   .jo-year[open] > summary::before { transform: rotate(90deg); }
-  .jo-y { font-family: 'Fraunces', serif; font-size: 18px; flex: 1; }
+  .jo-y { font-family: 'GFS Neohellenic', serif; font-size: 18px; flex: 1; }
   .jo-n { font-size: 12px; color: var(--ink-faint); }
   .jo-month { margin: 12px 0 4px; }
   .jo-m { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-faint); margin: 0 0 8px 4px; }
@@ -232,12 +233,12 @@
   .syn-card .gl { color: var(--accent); flex-shrink: 0; display: flex; width: 24px; }
   .syn-card .meta { flex: 1; min-width: 0; text-align: center; }
   .syn-card .sub { font-size: 11px; color: var(--ink-soft); margin-top: 2px; }
-  .syn-card .name { font-family: 'Fraunces', serif; font-size: 15px; }
+  .syn-card .name { font-family: 'GFS Neohellenic', serif; font-size: 15px; }
   .syn-card .chev { color: var(--accent); flex-shrink: 0; display: flex; justify-content: flex-end; width: 24px; }
   .journal-row { display: flex; align-items: center; gap: 12px; background: var(--card-2); border-radius: 12px; padding: 12px 14px; cursor: pointer; text-align: left; border: none; width: 100%; font-family: inherit; color: var(--ink); }
   .journal-row .num { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--ink-faint); flex-shrink: 0; width: 40px; }
   .journal-row .meta { flex: 1; min-width: 0; }
-  .journal-row .name { font-family: 'Fraunces', serif; font-size: 15px; }
+  .journal-row .name { font-family: 'GFS Neohellenic', serif; font-size: 15px; }
   .journal-row .date { font-size: 11px; color: var(--ink-faint); margin-top: 2px; }
   .journal-empty { color: var(--ink-faint); font-size: 13.5px; text-align: center; margin-top: 40px; }
   .fab { position: fixed; bottom: 24px; right: 24px; z-index: 5; }
@@ -258,7 +259,7 @@
   .fig-row { display: flex; gap: 10px; align-items: flex-start; }
   .fig-av { width: 38px; height: 38px; border-radius: 50%; flex-shrink: 0; overflow: hidden; background: var(--card-2); display: flex; align-items: flex-start; justify-content: center; }
   .fig-av img { width: 30px; margin-top: 3px; }
-  .fig-bub { background: var(--card-2); border-radius: 4px 16px 16px 16px; padding: 10px 14px; font-family: 'Fraunces', serif; font-size: 15px; line-height: 1.5; color: var(--ink); white-space: pre-wrap; }
+  .fig-bub { background: var(--card-2); border-radius: 4px 16px 16px 16px; padding: 10px 14px; font-family: 'GFS Neohellenic', serif; font-size: 15px; line-height: 1.5; color: var(--ink); white-space: pre-wrap; }
   .me-row { display: flex; justify-content: flex-end; }
   .me-bub { background: var(--accent-soft); border-radius: 16px 4px 16px 16px; padding: 10px 14px; font-size: 14px; line-height: 1.5; color: var(--ink); max-width: 85%; white-space: pre-wrap; }
   .fig-input { display: flex; gap: 8px; align-items: flex-end; }
@@ -1807,7 +1808,7 @@ function render() {
 }
 
 // ---------- MISE À JOUR AUTOMATIQUE (app installée) ----------
-const APP_VERSION = '2026-10-21d';
+const APP_VERSION = '2026-10-22a';
 const SAFE_VIEWS = ['auth', 'journal', 'compte', 'synthese', 'legal', 'avant-ok', 'restitution'];
 async function checkUpdate() {
   if (location.protocol.indexOf('http') !== 0) return;
