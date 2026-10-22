@@ -1248,7 +1248,7 @@ function bindFigure(reve) {
     const open = d && d.tours < d.max_tours && msgs.length && msgs[msgs.length - 1].role === 'figure';
     box.innerHTML = msgs.map(bubble).join('') + (pending ? bubble({ role: 'reveur', texte: pending }) + typing : '')
       + (open && !pending ? `<div class="fig-input"><textarea id="fig-text" rows="2" maxlength="4000" placeholder="Ce qui vous vient…"></textarea><button id="fig-send" aria-label="Envoyer">${FIG_SEND}</button></div>` : '')
-      + (d && !open && !pending && msgs.length > 1 ? `<div class="fig-note">Un échange par rêve · vos réponses nourrissent la synthèse</div>` : '');
+      + (d && !open && !pending && msgs.length > 1 ? `<div class="fig-note">Échange terminé · vos réponses nourrissent la synthèse</div>` : '');
     const send = box.querySelector('#fig-send');
     if (send) send.onclick = async () => {
       const t = box.querySelector('#fig-text').value.trim();
@@ -1808,7 +1808,7 @@ function render() {
 }
 
 // ---------- MISE À JOUR AUTOMATIQUE (app installée) ----------
-const APP_VERSION = '2026-10-22b';
+const APP_VERSION = '2026-10-22a';
 const SAFE_VIEWS = ['auth', 'journal', 'compte', 'synthese', 'legal', 'avant-ok', 'restitution'];
 async function checkUpdate() {
   if (location.protocol.indexOf('http') !== 0) return;
