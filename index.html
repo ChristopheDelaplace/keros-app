@@ -223,7 +223,8 @@
   .view.searching .journal-head, .view.searching .syn-card { display: none; }
   .search-box { display: flex; align-items: center; gap: 8px; border: 1px solid var(--line); border-radius: 999px; background: var(--card); color: var(--ink-faint); padding: 0 14px; margin: -41px 0 14px; }
   .search-box input { flex: 1; border: none; background: none; outline: none; color: var(--ink); font-family: 'Work Sans', sans-serif; font-size: 16px; padding: 11px 0; min-width: 0; }
-  .gr-star { color: var(--accent); margin-left: 6px; font-size: 13px; }
+  .gr-star { color: var(--accent); font-size: 15px; }
+  .journal-row .gr-col { flex-shrink: 0; width: 40px; text-align: right; }
   .gr-star.sug { color: var(--ink-faint); }
   .gr-filter { display: block; margin: -4px auto 12px; border: 1px solid var(--line); background: var(--card); color: var(--ink-soft); border-radius: 999px; padding: 5px 14px; font-size: 12.5px; font-family: 'Work Sans', sans-serif; cursor: pointer; }
   .gr-filter.on { border-color: var(--accent); color: var(--accent); background: var(--accent-soft, var(--card)); }
@@ -1412,9 +1413,10 @@ function journalRowHtml(r) {
               <span class="num">${r.avant_m ? 'av.' + r.rang : '#' + r.rang}</span>
               <span class="meta">
                 <div class="name">${escapeHtml(r.nom || (r.avant_m ? excerpt(r.transcription, 7) : 'Sans titre'))}</div>
-                <div class="date">${grandStar(r) ? grandStar(r) + ' ' : ''}${fmtDateR(r)}${r.avant_m ? ` · <span class="avm">${AV_LABEL}</span>` : (r.sentiment ? ' · ' + escapeHtml(r.sentiment) : '')}${lectureEnCours(r) ? ' · lecture en cours…' : ''}</div>
+                <div class="date">${fmtDateR(r)}${r.avant_m ? ` · <span class="avm">${AV_LABEL}</span>` : (r.sentiment ? ' · ' + escapeHtml(r.sentiment) : '')}${lectureEnCours(r) ? ' · lecture en cours…' : ''}</div>
                 <div class="hit"></div>
               </span>
+              <span class="gr-col">${grandStar(r)}</span>
             </button>`;
 }
 function journalListHtml() {
