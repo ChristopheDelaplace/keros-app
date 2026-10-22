@@ -223,6 +223,14 @@
   .view.searching .journal-head, .view.searching .syn-card { display: none; }
   .search-box { display: flex; align-items: center; gap: 8px; border: 1px solid var(--line); border-radius: 999px; background: var(--card); color: var(--ink-faint); padding: 0 14px; margin: -41px 0 14px; }
   .search-box input { flex: 1; border: none; background: none; outline: none; color: var(--ink); font-family: 'Work Sans', sans-serif; font-size: 16px; padding: 11px 0; min-width: 0; }
+  .gr-star { color: var(--accent); margin-left: 6px; font-size: 13px; }
+  .gr-star.sug { color: var(--ink-faint); }
+  .gr-filter { display: block; margin: -4px auto 12px; border: 1px solid var(--line); background: var(--card); color: var(--ink-soft); border-radius: 999px; padding: 5px 14px; font-size: 12.5px; font-family: 'Work Sans', sans-serif; cursor: pointer; }
+  .gr-filter.on { border-color: var(--accent); color: var(--accent); background: var(--accent-soft, var(--card)); }
+  .gr-box { text-align: center; margin: -6px 0 16px; }
+  .gr-box .gr-raison { font-size: 12.5px; line-height: 1.5; color: var(--ink-soft); margin: 4px auto 6px; max-width: 320px; }
+  .gr-box .gr-lab { font-size: 13px; color: var(--accent); }
+  .gr-box .link-btn { font-size: 12.5px; padding: 2px 6px; }
   .search-count { font-size: 12px; color: var(--ink-faint); text-align: center; margin: 0 0 10px; }
   .search-count:empty { display: none; }
   .journal-row .hit { font-size: 12.5px; line-height: 1.45; color: var(--ink-soft); margin-top: 4px; }
@@ -1121,6 +1129,7 @@ function renderAvantRead(reve) {
         <h2 class="rest-title display">${escapeHtml(fmtDateR(reve))}</h2>
         <span class="avm">${AV_LABEL} ${reve.rang ?? ''}</span>
       </div>
+      ${reve.id ? grandBoxHtml(reve) : ''}
       <div class="avant-text">${escapeHtml(reve.transcription || '')}</div>
       ${journalSeul() ? '' : `<div class="rest-block"><p>Rêve d'avant mykeros : il compte dans votre synthèse. Vous pouvez aussi demander une lecture de ce rêve seul, sans associations : elle restera prudente.</p></div>`}
       <div class="footer-actions" style="flex-direction:column">
@@ -1131,6 +1140,7 @@ function renderAvantRead(reve) {
     </div>
   `);
   bindTopNav();
+  bindGrand(reve);
   $('#av-back').onclick = goJournal;
   if ($('#av-read')) $('#av-read').onclick = () => { state.reve = reve; runRestitution(reve.contexte || ''); };
   $('#del-dream').onclick = async () => {
@@ -1278,6 +1288,7 @@ function renderRestitution(reve) {
         <h2 class="rest-title display">${escapeHtml(reve.nom || 'Sans titre')}</h2>
         ${reve.avant_m ? `<span class="avm">${AV_LABEL} ${reve.rang ?? ''} · ${escapeHtml(fmtDateR(reve))}</span>` : (reve.sentiment ? `<span class="rest-tag">◐ ${escapeHtml(reve.sentiment)}</span>` : '')}
       </div>
+      ${reve.id ? grandBoxHtml(reve) : ''}
       ${r.motif_recurrent && r.motif_recurrent.present ? `
         <div class="motif-card"><span class="t">${escapeHtml(r.motif_recurrent.texte)}</span></div>
       ` : ''}
@@ -1305,6 +1316,7 @@ function renderRestitution(reve) {
   `);
   bindTopNav();
   bindRecit(reve);
+  bindGrand(reve);
   bindKwAssoc(reve);
   bindComment(reve);
   bindFigure(reve);
@@ -1334,7 +1346,7 @@ async function goJournal() {
   const uid = state.session.user.id;
   const [{ data, error }, { data: syn }] = await Promise.all([
     // liste allégée : la lecture (restitution) n'est chargée qu'à l'ouverture d'un rêve
-    sb.from('reves').select('id, user_id, numero, date, date_precision, nom, sentiment, contexte, lecture, tier_utilise, transcription, lecture_statut, lecture_debut, created_at, avant_m, commentaire, commentaire_at').eq('user_id', uid).order('date', { ascending: false }).order('created_at', { ascending: false }),
+    sb.from('reves').select('id, user_id, numero, date, date_precision, nom, sentiment, contexte, lecture, tier_utilise, transcription, lecture_statut, lecture_debut, grand_reve, gr_ia:fiche->grand_reve, created_at, avant_m, commentaire, commentaire_at').eq('user_id', uid).order('date', { ascending: false }).order('created_at', { ascending: false }),
     sb.from('syntheses').select('created_at, nb_reves').eq('user_id', uid).eq('statut', 'ok').order('created_at', { ascending: false }).limit(1),
   ]);
   state.journal = error ? [] : data;
@@ -1371,13 +1383,36 @@ function renderJournalLoading() {
 // Au-delà de JOURNAL_GROUP_MIN rêves, le journal se replie par année puis par mois
 const JOURNAL_GROUP_MIN = 30;
 const MOIS_NOMS = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+// Grand rêve : confirmé par le rêveur (oui/non) ou suggéré par la fiche IA
+const grandEtat = r => r.grand_reve === true ? 'oui' : r.grand_reve === false ? 'non' : (r.gr_ia && r.gr_ia.suggere ? 'suggere' : '');
+const grandStar = r => { const e = grandEtat(r); return e === 'oui' ? '<span class="gr-star" title="Grand rêve">★</span>' : e === 'suggere' ? '<span class="gr-star sug" title="Grand rêve suggéré">☆</span>' : ''; };
+function grandBoxHtml(r) {
+  const e = grandEtat(r);
+  const raison = r.gr_ia && r.gr_ia.raison ? `<div class="gr-raison">${escapeHtml(r.gr_ia.raison)}</div>` : '';
+  if (e === 'oui') return `<div class="gr-box"><span class="gr-lab">★ Grand rêve</span> <button class="link-btn" data-gr="null">Retirer</button></div>`;
+  if (e === 'suggere') return `<div class="gr-box"><span class="gr-lab">☆ Grand rêve ?</span>${raison}<button class="link-btn" data-gr="true">Oui, c'en est un</button><button class="link-btn" data-gr="false">Non</button></div>`;
+  return `<div class="gr-box"><button class="link-btn" data-gr="true">☆ Marquer comme grand rêve</button></div>`;
+}
+function bindGrand(reve, redraw) {
+  root.querySelectorAll('[data-gr]').forEach(b => {
+    b.onclick = async () => {
+      const v = b.dataset.gr === 'true' ? true : b.dataset.gr === 'false' ? false : null;
+      b.disabled = true;
+      const { error } = await sb.from('reves').update({ grand_reve: v }).eq('id', reve.id);
+      if (error) { b.disabled = false; return; }
+      reve.grand_reve = v;
+      const j = (state.journal || []).find(x => x.id === reve.id); if (j) j.grand_reve = v;
+      const box = b.closest('.gr-box'); if (box) { box.outerHTML = grandBoxHtml(reve); bindGrand(reve); }
+    };
+  });
+}
 function journalRowHtml(r) {
   return `
             <button class="journal-row" data-id="${r.id}">
               <span class="num">${r.avant_m ? 'av.' + r.rang : '#' + r.rang}</span>
               <span class="meta">
                 <div class="name">${escapeHtml(r.nom || (r.avant_m ? excerpt(r.transcription, 7) : 'Sans titre'))}</div>
-                <div class="date">${fmtDateR(r)}${r.avant_m ? ` · <span class="avm">${AV_LABEL}</span>` : (r.sentiment ? ' · ' + escapeHtml(r.sentiment) : '')}${lectureEnCours(r) ? ' · lecture en cours…' : ''}</div>
+                <div class="date">${grandStar(r) ? grandStar(r) + ' ' : ''}${fmtDateR(r)}${r.avant_m ? ` · <span class="avm">${AV_LABEL}</span>` : (r.sentiment ? ' · ' + escapeHtml(r.sentiment) : '')}${lectureEnCours(r) ? ' · lecture en cours…' : ''}</div>
                 <div class="hit"></div>
               </span>
             </button>`;
@@ -1418,6 +1453,7 @@ function renderJournal() {
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg>
           <input id="journal-search" type="search" placeholder="Rechercher dans vos rêves" autocomplete="off" value="${escapeHtml(state.journalQuery || '')}">
         </div>
+        ${state.journal.some(r => ['oui', 'suggere'].includes(grandEtat(r))) ? `<button class="gr-filter${state.joGrands ? ' on' : ''}" id="gr-filter">★ Grands rêves (${state.journal.filter(r => ['oui', 'suggere'].includes(grandEtat(r))).length})</button>` : ''}
         <div class="search-count" id="search-count"></div>
       ` : ''}
       <div class="journal-head">
@@ -1482,19 +1518,22 @@ function bindJournalSearch() {
   const apply = () => {
     state.journalQuery = input.value;
     const q = norm(input.value.trim());
+    const gr = !!state.joGrands;
     let n = 0;
     root.querySelectorAll('.journal-row').forEach(btn => {
       const r = state.journal.find(x => x.id === btn.dataset.id);
       const hit = btn.querySelector('.hit'), name = btn.querySelector('.name');
       if (name.dataset.orig === undefined) name.dataset.orig = name.innerHTML;
       name.innerHTML = name.dataset.orig; hit.innerHTML = '';
-      if (!q) { btn.style.display = ''; return; }
+      const okGr = !gr || ['oui', 'suggere'].includes(grandEtat(r));
+      if (!q) { btn.style.display = okGr ? '' : 'none'; if (okGr && gr) n++; return; }
       const inTitle = norm(r.nom).includes(q);
       const f = inTitle ? null : reveFields(r).find(([, t]) => norm(t).includes(q));
-      btn.style.display = inTitle || f ? '' : 'none';
+      const vis = (inTitle || f) && okGr;
+      btn.style.display = vis ? '' : 'none';
       if (inTitle) name.innerHTML = hitSnippet(r.nom, q);
       else if (f) hit.innerHTML = (f[0] ? `<span class="hit-k">${f[0]} · </span>` : '') + hitSnippet(f[1], q);
-      if (inTitle || f) n++;
+      if (vis) n++;
     });
     root.querySelectorAll('details.jo-year').forEach(d => {
       d.querySelectorAll('.jo-month').forEach(m => {
@@ -1502,13 +1541,15 @@ function bindJournalSearch() {
       });
       const any = [...d.querySelectorAll('.journal-row')].some(b => b.style.display !== 'none');
       d.style.display = any ? '' : 'none';
-      d.open = q ? true : (state.joOpen ? state.joOpen.has(Number(d.dataset.y)) : d.open);
+      d.open = (q || gr) ? true : (state.joOpen ? state.joOpen.has(Number(d.dataset.y)) : d.open);
     });
-    root.querySelector('.view').classList.toggle('searching', !!q);
+    root.querySelector('.view').classList.toggle('searching', !!q || gr);
     $('#search-count').textContent = q ? (n ? `${n} rêve${n > 1 ? 's' : ''} contien${n > 1 ? 'nent' : 't'} « ${input.value.trim()} »` : `Aucun rêve ne contient « ${input.value.trim()} »`) : '';
   };
   input.oninput = apply;
-  if (input.value) apply();
+  const gf = $('#gr-filter');
+  if (gf) gf.onclick = () => { state.joGrands = !state.joGrands; gf.classList.toggle('on', state.joGrands); apply(); };
+  if (input.value || state.joGrands) apply();
 }
 
 // ---------- SYNTHÈSE ----------
@@ -1808,7 +1849,7 @@ function render() {
 }
 
 // ---------- MISE À JOUR AUTOMATIQUE (app installée) ----------
-const APP_VERSION = '2026-10-22a';
+const APP_VERSION = '2026-10-22b';
 const SAFE_VIEWS = ['auth', 'journal', 'compte', 'synthese', 'legal', 'avant-ok', 'restitution'];
 async function checkUpdate() {
   if (location.protocol.indexOf('http') !== 0) return;
