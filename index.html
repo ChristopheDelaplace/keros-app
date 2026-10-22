@@ -216,10 +216,14 @@
   .jo-year > summary::-webkit-details-marker { display: none; }
   .jo-year > summary::before { content: '›'; display: inline-block; width: 14px; color: var(--ink-faint); transition: transform .2s; }
   .jo-year[open] > summary::before { transform: rotate(90deg); }
-  .jo-y { font-family: 'GFS Neohellenic', serif; font-size: 18px; flex: 1; }
+  .jo-y { font-family: 'GFS Neohellenic', serif; font-size: 18px; flex: 1; text-align: center; }
   .jo-n { font-size: 12px; color: var(--ink-faint); }
+  .jo-year > summary { position: relative; }
+  .jo-year > summary::before { position: absolute; left: 4px; }
+  .jo-year > summary .jo-n { position: absolute; right: 4px; }
   .jo-month { margin: 12px 0 4px; }
-  .jo-m { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-faint); margin: 0 0 8px 4px; }
+  .jo-m { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-faint); margin: 0 0 8px; text-align: center; }
+  .journal-row .meta { text-align: center; }
   .view.searching .journal-head, .view.searching .syn-card { display: none; }
   .search-box { display: flex; align-items: center; gap: 8px; border: 1px solid var(--line); border-radius: 999px; background: var(--card); color: var(--ink-faint); padding: 0 14px; margin: -41px 0 14px; }
   .search-box input { flex: 1; border: none; background: none; outline: none; color: var(--ink); font-family: 'Work Sans', sans-serif; font-size: 16px; padding: 11px 0; min-width: 0; }
