@@ -158,6 +158,18 @@
   .text-toggle { font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-soft); background: none; border: 1px solid var(--line); border-radius: 999px; padding: 8px 16px; cursor: pointer; }
   .recit-preview { width: 100%; text-align: left; background: var(--card-2); border-radius: 12px; padding: 12px; font-size: 13.5px; line-height: 1.5; max-height: 160px; overflow-y: auto; margin-top: 14px; }
   .recit-textarea { width: 100%; min-height: 140px; margin-top: 14px; text-align: left; }
+  /* Saisie : écran d'accueil épuré, puis zone de récit pleine largeur */
+  .recueil .rq-or { margin-top: 10px; font-size: 13px; }
+  .recueil.composing .recueil-image, .recueil.composing .greet, .recueil.composing .prompt, .recueil.composing .mic-wrap, .recueil.composing .rq-or { display: none; }
+  .recueil.composing .mic-content { margin-top: 6px; }
+  .recueil.composing .mic-hint { margin-top: 4px; max-width: none; }
+  .recueil.composing .recit-textarea { max-width: none; min-height: calc(100dvh - 300px); margin-top: 10px; font-family: 'GFS Neohellenic', serif; font-size: 17px; line-height: 1.55; padding: 14px 16px; }
+  .recueil.composing.avant .recit-textarea { min-height: calc(100dvh - 470px); }
+  .rq-bar { display: none; width: 100%; gap: 10px; align-items: center; margin-top: 12px; }
+  .recueil.composing .rq-bar { display: flex; }
+  .rq-bar .btn { flex: 1; }
+  .mic-mini { width: 48px; height: 48px; border-radius: 50%; border: none; background: var(--accent); color: var(--card); display: flex; align-items: center; justify-content: center; flex-shrink: 0; cursor: pointer; }
+  .mic-mini.recording { background: var(--rose); }
 
 
   /* Step card (sentiment/nom/contexte/associations) */
@@ -655,12 +667,13 @@ function renderRecueil() {
             <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
           </button>
         </div>
-        <div id="recit-area"></div>
         <div class="mic-bottom">
-          <p class="mic-hint" id="mic-hint">Parlez comme si vous y étiez encore. On transcrit pendant que le rêve est frais.</p>
-          <button class="text-toggle" id="text-toggle" style="margin-top:14px;">Écrire plutôt</button>
-          <div class="footer-actions" id="recueil-actions" style="display:none;">
-            <button class="btn btn-primary btn-block" id="recueil-continue">${state.avantM ? 'Enregistrer' : 'Continuer →'}</button>
+          <p class="mic-hint" id="mic-hint"></p>
+          <button class="link-btn rq-or" id="text-toggle">ou l'écrire</button>
+          <div id="recit-area"></div>
+          <div class="rq-bar" id="recueil-actions">
+            <button class="mic-mini" id="mic-mini" aria-label="Dicter"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>
+            <button class="btn btn-primary" id="recueil-continue" disabled>${state.avantM ? 'Enregistrer' : 'Continuer →'}</button>
           </div>
         </div>
       </div>
@@ -672,33 +685,41 @@ function renderRecueil() {
   const recitArea = $('#recit-area');
   const actions = $('#recueil-actions');
   const micHint = $('#mic-hint');
-  const defaultHint = state.avantM ? 'Une date approximative suffit : seule l\'année est nécessaire.' : 'Parlez comme si vous y étiez encore. On transcrit pendant que le rêve est frais.';
+  const defaultHint = state.avantM ? 'Une date approximative suffit : seule l\'année est nécessaire.' : 'Touchez le micro et racontez, comme si vous y étiez encore.';
+  const relireHint = 'Relisez et corrigez si besoin, puis continuez.';
   micHint.textContent = defaultHint;
+  const view = root.querySelector('.view.recueil');
   if (state.avantM) {
     const sync = () => { state.avantDate = { y: $('#av-y').value, m: $('#av-m').value, d: $('#av-d').value, n: $('#av-n').value }; };
     ['#av-y', '#av-m', '#av-d', '#av-n'].forEach(id => $(id).addEventListener('input', sync));
   }
 
   function showTextArea(prefill) {
-    recitArea.innerHTML = `<textarea class="kw-input recit-textarea" id="recit-text" placeholder="Racontez ce dont vous vous souvenez…">${escapeHtml(prefill || '')}</textarea>`;
-    $('#recit-text').addEventListener('input', updateContinueState);
+    if (!$('#recit-text')) {
+      recitArea.innerHTML = `<textarea class="kw-input recit-textarea" id="recit-text" placeholder="Racontez ce dont vous vous souvenez…">${escapeHtml(prefill || '')}</textarea>`;
+      $('#recit-text').addEventListener('input', updateContinueState);
+    }
+    view.classList.add('composing');
+    if (!recognizing) micHint.textContent = state.avantM ? defaultHint : relireHint;
     updateContinueState();
   }
   function updateContinueState() {
     const el = $('#recit-text');
     const val = el ? el.value.trim() : '';
-    actions.style.display = val ? 'flex' : 'none';
+    $('#recueil-continue').disabled = !val;
     state.recit = val;
   }
+  if (state.recit) showTextArea(state.recit);
 
   $('#text-toggle').onclick = () => {
     showTextArea(state.recit);
     $('#recit-text').focus();
   };
 
-  $('#mic-btn').onclick = () => {
+  const dictee = () => {
     if (!SpeechRec) {
-      micHint.textContent = "La dictée vocale n'est pas disponible sur ce navigateur — utilisez « Écrire plutôt ».";
+      micHint.textContent = "La dictée vocale n'est pas disponible sur ce navigateur : écrivez votre rêve.";
+      showTextArea(state.recit);
       return;
     }
     if (recognizing) {
@@ -709,12 +730,12 @@ function renderRecueil() {
     recognition.lang = 'fr-FR';
     recognition.continuous = true;
     recognition.interimResults = true;
-    let finalTranscript = state.recit || '';
-    showTextArea(finalTranscript);
+    let finalTranscript = state.recit ? state.recit + ' ' : '';
+    showTextArea(state.recit || '');
     recognition.onstart = () => {
       recognizing = true;
-      $('#mic-btn').classList.add('recording');
-      micHint.textContent = 'Je vous écoute…';
+      root.querySelectorAll('.mic-btn, .mic-mini').forEach(b => b.classList.add('recording'));
+      micHint.textContent = 'Je vous écoute… touchez le micro pour arrêter.';
     };
     recognition.onresult = (event) => {
       let interim = '';
@@ -738,11 +759,13 @@ function renderRecueil() {
     };
     recognition.onend = () => {
       recognizing = false;
-      $('#mic-btn').classList.remove('recording');
-      micHint.textContent = defaultHint;
+      root.querySelectorAll('.mic-btn, .mic-mini').forEach(b => b.classList.remove('recording'));
+      micHint.textContent = state.avantM ? defaultHint : relireHint;
     };
     recognition.start();
   };
+  $('#mic-btn').onclick = dictee;
+  $('#mic-mini').onclick = dictee;
 
   $('#recueil-continue').onclick = async () => {
     if (!state.recit) return;
