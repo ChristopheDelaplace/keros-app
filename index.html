@@ -424,6 +424,17 @@ async function loadProfileAndGo() {
 
 // Mémorise la page affichée pour y revenir si le téléphone a fermé l'app en arrière-plan
 const DERNIERE_PAGE = 'mk_derniere_page';
+// Après une longue absence (la nuit, le matin), l'app s'ouvre sur la saisie d'un rêve
+const INACTIF_SAISIE = 2 * 3600 * 1000;
+const PAGES_CONSULTATION = ['journal', 'restitution', 'restituting', 'restitution-error', 'synthese', 'compte', 'legal', 'avant-ok'];
+let masqueeLe = 0;
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') { masqueeLe = Date.now(); return; }
+  if (masqueeLe && Date.now() - masqueeLe > INACTIF_SAISIE && state.session && state.profile && PAGES_CONSULTATION.includes(state.view)) {
+    state.avantM = false; state.recit = ''; state.reve = null; state.view = 'recueil'; render();
+  }
+  masqueeLe = 0;
+});
 const PAGES_REPRISES = ['journal', 'restitution', 'restituting', 'restitution-error', 'synthese', 'compte'];
 function memoriserPage() {
   try {
@@ -435,7 +446,7 @@ function memoriserPage() {
 async function reprendreDernierePage() {
   let p = null;
   try { p = JSON.parse(localStorage.getItem(DERNIERE_PAGE) || 'null'); } catch (e) {}
-  if (!p || !PAGES_REPRISES.includes(p.v) || Date.now() - (p.t || 0) > 12 * 3600 * 1000) return false;
+  if (!p || !PAGES_REPRISES.includes(p.v) || Date.now() - (p.t || 0) > INACTIF_SAISIE) return false;
   if (p.v === 'synthese' || p.v === 'compte') { state.view = p.v; render(); return true; }
   await goJournal();
   if (p.v === 'journal' || !p.id) return true;
@@ -1852,7 +1863,7 @@ function render() {
 }
 
 // ---------- MISE À JOUR AUTOMATIQUE (app installée) ----------
-const APP_VERSION = '2026-10-23a';
+const APP_VERSION = '2026-10-23b';
 const SAFE_VIEWS = ['auth', 'journal', 'compte', 'synthese', 'legal', 'avant-ok', 'restitution'];
 async function checkUpdate() {
   if (location.protocol.indexOf('http') !== 0) return;
