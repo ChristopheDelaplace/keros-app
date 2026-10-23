@@ -424,6 +424,7 @@ async function loadProfileAndGo() {
     ({ data: profile } = await sb.from('profiles').select('*').eq('id', uid).maybeSingle());
   }
   state.profile = profile;
+  signalerOuverture();
   if (await reprendreDernierePage()) return;
   state.view = 'recueil';
   render();
@@ -441,7 +442,16 @@ document.addEventListener('visibilitychange', () => {
     state.avantM = false; state.recit = ''; state.reve = null; state.view = 'recueil'; render();
   }
   masqueeLe = 0;
+  signalerOuverture();
 });
+// Suivi des versions : note la version de l'app et l'heure d'ouverture (au plus une fois par demi-heure)
+let ouvertureSignaleeLe = 0;
+function signalerOuverture() {
+  if (!state.session || !state.profile) return;
+  if (Date.now() - ouvertureSignaleeLe < 30 * 60 * 1000) return;
+  ouvertureSignaleeLe = Date.now();
+  sb.rpc('signaler_ouverture', { p_version: APP_VERSION }).then(() => {}, () => {});
+}
 const PAGES_REPRISES = ['journal', 'restitution', 'restituting', 'restitution-error', 'synthese', 'compte'];
 function memoriserPage() {
   try {
@@ -1869,7 +1879,7 @@ function render() {
 }
 
 // ---------- MISE À JOUR AUTOMATIQUE (app installée) ----------
-const APP_VERSION = '2026-10-23c';
+const APP_VERSION = '2026-10-23d';
 const SAFE_VIEWS = ['auth', 'journal', 'compte', 'synthese', 'legal', 'avant-ok', 'restitution'];
 async function checkUpdate() {
   if (location.protocol.indexOf('http') !== 0) return;
