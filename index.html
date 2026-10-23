@@ -230,9 +230,16 @@
   .gr-filter { display: block; margin: -4px auto 12px; border: 1px solid var(--line); background: var(--card); color: var(--ink-soft); border-radius: 999px; padding: 5px 14px; font-size: 12.5px; font-family: 'Work Sans', sans-serif; cursor: pointer; }
   .gr-filter.on { border-color: var(--accent); color: var(--accent); background: var(--accent-soft, var(--card)); }
   .gr-box { text-align: center; margin: -6px 0 16px; }
-  .gr-box .gr-raison { font-size: 12.5px; line-height: 1.5; color: var(--ink-soft); margin: 4px auto 6px; max-width: 320px; }
   .gr-box .gr-lab { font-size: 13px; color: var(--accent); }
   .gr-box .link-btn { font-size: 12.5px; padding: 2px 6px; }
+  .gr-card { border: 1px solid var(--accent); background: var(--accent-soft); border-radius: 14px; padding: 14px 16px; margin: -4px 0 18px; text-align: center; }
+  .gr-card .gr-q { display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 15px; color: var(--ink); font-weight: 600; }
+  .gr-card .gr-q .st { font-size: 20px; color: var(--accent); background: none; border: none; cursor: pointer; padding: 0; line-height: 1; }
+  .gr-card .gr-raison { font-size: 13px; line-height: 1.5; color: var(--ink-soft); margin: 6px auto 12px; max-width: 330px; }
+  .gr-card .gr-btns { display: flex; gap: 8px; justify-content: center; }
+  .gr-card .gr-btns button { border-radius: 999px; padding: 8px 16px; font-size: 13.5px; font-family: 'Work Sans', sans-serif; cursor: pointer; border: 1px solid var(--accent); }
+  .gr-card .gr-oui { background: var(--accent); color: #fff; }
+  .gr-card .gr-non { background: transparent; color: var(--accent); }
   .search-count { font-size: 12px; color: var(--ink-faint); text-align: center; margin: 0 0 10px; }
   .search-count:empty { display: none; }
   .journal-row .hit { font-size: 12.5px; line-height: 1.45; color: var(--ink-soft); margin-top: 4px; }
@@ -1401,9 +1408,8 @@ const grandEtat = r => r.grand_reve === true ? 'oui' : r.grand_reve === false ? 
 const grandStar = r => { const e = grandEtat(r); return e === 'oui' ? '<span class="gr-star" title="Grand rêve">★</span>' : e === 'suggere' ? '<span class="gr-star sug" title="Grand rêve suggéré">☆</span>' : ''; };
 function grandBoxHtml(r) {
   const e = grandEtat(r);
-  const raison = r.gr_ia && r.gr_ia.raison ? `<div class="gr-raison">${escapeHtml(r.gr_ia.raison)}</div>` : '';
   if (e === 'oui') return `<div class="gr-box"><span class="gr-lab">★ Grand rêve</span> <button class="link-btn" data-gr="null">Retirer</button></div>`;
-  if (e === 'suggere') return `<div class="gr-box"><span class="gr-lab">☆ Grand rêve ?</span>${raison}<button class="link-btn" data-gr="true">Oui, c'en est un</button><button class="link-btn" data-gr="false">Non</button></div>`;
+  if (e === 'suggere') return `<div class="gr-box gr-card"><div class="gr-q"><button class="st" data-gr="true" aria-label="Confirmer">☆</button>Est-ce un grand rêve ?</div><div class="gr-raison">mykeros le pense : ${r.gr_ia && r.gr_ia.raison ? escapeHtml(r.gr_ia.raison.charAt(0).toLowerCase() + r.gr_ia.raison.slice(1)) : 'ce rêve semble rare et marquant.'}</div><div class="gr-btns"><button class="gr-oui" data-gr="true">★ Oui, c'est un grand rêve</button><button class="gr-non" data-gr="false">Non</button></div></div>`;
   return `<div class="gr-box"><button class="link-btn" data-gr="true">☆ Marquer comme grand rêve</button></div>`;
 }
 function bindGrand(reve, redraw) {
@@ -1863,7 +1869,7 @@ function render() {
 }
 
 // ---------- MISE À JOUR AUTOMATIQUE (app installée) ----------
-const APP_VERSION = '2026-10-23b';
+const APP_VERSION = '2026-10-23c';
 const SAFE_VIEWS = ['auth', 'journal', 'compte', 'synthese', 'legal', 'avant-ok', 'restitution'];
 async function checkUpdate() {
   if (location.protocol.indexOf('http') !== 0) return;
