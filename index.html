@@ -159,7 +159,7 @@
   .recit-preview { width: 100%; text-align: left; background: var(--card-2); border-radius: 12px; padding: 12px; font-size: 13.5px; line-height: 1.5; max-height: 160px; overflow-y: auto; margin-top: 14px; }
   .recit-textarea { width: 100%; min-height: 140px; margin-top: 14px; text-align: left; }
   /* Saisie : écran d'accueil épuré, puis zone de récit pleine largeur */
-  .recueil .rq-or { margin-top: 10px; font-size: 13px; }
+  .recueil .rq-or { margin-top: 14px; }
   .recueil.composing .recueil-image, .recueil.composing .greet, .recueil.composing .prompt, .recueil.composing .mic-wrap, .recueil.composing .rq-or { display: none; }
   .recueil.composing .mic-content { margin-top: 6px; }
   .recueil.composing .mic-hint { margin-top: 4px; max-width: none; }
@@ -669,7 +669,7 @@ function renderRecueil() {
         </div>
         <div class="mic-bottom">
           <p class="mic-hint" id="mic-hint"></p>
-          <button class="link-btn rq-or" id="text-toggle">ou l'écrire</button>
+          <button class="text-toggle rq-or" id="text-toggle">Écrire plutôt</button>
           <div id="recit-area"></div>
           <div class="rq-bar" id="recueil-actions">
             <button class="mic-mini" id="mic-mini" aria-label="Dicter"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>
@@ -1915,7 +1915,7 @@ function render() {
 }
 
 // ---------- MISE À JOUR AUTOMATIQUE (app installée) ----------
-const APP_VERSION = '2026-10-23d';
+const APP_VERSION = '2026-10-23e';
 const SAFE_VIEWS = ['auth', 'journal', 'compte', 'synthese', 'legal', 'avant-ok', 'restitution'];
 async function checkUpdate() {
   if (location.protocol.indexOf('http') !== 0) return;
