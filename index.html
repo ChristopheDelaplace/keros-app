@@ -637,6 +637,85 @@ function bindTopNav() {
 let recognition = null;
 let recognizing = false;
 
+// ---------- Ponctuation de la dictée ----------
+// 1) Commandes dites à voix haute (« virgule », « point », « à la ligne »…)
+const PT_AVANT = new Set(['le','un','au','à','a','ce','du','des','les','mon','ton','son','notre','votre','leur','quel','quelque','chaque','premier','dernier','bon','mauvais','petit','gros','même','sur','en','de']);
+const PT_APRES = new Set(['de','du','des','d','mort','culminant','commun','faible','fort','cardinal','chaud','noir','rouge','blanc','central']);
+function commandesVocales(seg) {
+  let s = ' ' + seg.trim() + ' ';
+  const R = [
+    [/\s(?:point\s+)?(?:nouveau paragraphe)(?=[\s,.;:!?…)»]|$)/gi, (m) => (/point/i.test(m) ? '.' : '') + '\n\n'],
+    [/\spoint\s+(?:à|a)\s+la\s+ligne(?=[\s,.;:!?…)»]|$)/gi, '.\n'],
+    [/\s(?:retour\s+)?(?:à|a)\s+la\s+ligne(?=[\s,.;:!?…)»]|$)/gi, '\n'],
+    [/\snouvelle\s+ligne(?=[\s,.;:!?…)»]|$)/gi, '\n'],
+    [/\spoints?\s+d['’]\s?interrogation(?=[\s,.;:!?…)»]|$)/gi, ' ?'],
+    [/\spoints?\s+d['’]\s?exclamation(?=[\s,.;:!?…)»]|$)/gi, ' !'],
+    [/\spoints\s+de\s+suspension(?=[\s,.;:!?…)»]|$)/gi, '…'],
+    [/\spoint[-\s]virgule(?=[\s,.;:!?…)»]|$)/gi, ' ;'],
+    [/\sdeux[-\s]points(?=[\s,.;:!?…)»]|$)/gi, ' :'],
+    [/\svirgule(?=[\s,.;:!?…)»]|$)/gi, ','],
+    [/\s(?:ouvre[zr]?|ouvrir)\s+les\s+guillemets(?=[\s,.;:!?…)»]|$)/gi, ' «'],
+    [/\s(?:ferme[zr]?|fermer)\s+les\s+guillemets(?=[\s,.;:!?…)»]|$)/gi, ' »'],
+    [/\s(?:(?:ouvre[zr]?|ouvrir)\s+(?:la\s+)?parenth[eè]se|entre\s+parenth[eè]ses?)(?=[\s,.;:!?…)»]|$)/gi, ' ('],
+    [/\s(?:ferme[zr]?|fermer)\s+(?:la\s+)?parenth[eè]se(?=[\s,.;:!?…)»]|$)/gi, ')'],
+    [/\spoint\s+final(?=[\s,.;:!?…)»]|$)/gi, '.'],
+  ];
+  for (const [re, rep] of R) s = s.replace(re, rep);
+  // « point » seul : commande, sauf s'il fait partie d'une expression (« le point de vue », « au point »…)
+  const w = s.split(/(\s+)/);
+  for (let i = 0; i < w.length; i++) {
+    if (!/^point$/i.test(w[i])) continue;
+    let p = i - 1; while (p >= 0 && /^\s*$/.test(w[p])) p--;
+    let n = i + 1; while (n < w.length && /^\s*$/.test(w[n])) n++;
+    const prev = p >= 0 ? w[p].toLowerCase().replace(/[^a-zàâéèêëîïôûüç']/g, '') : '';
+    const next = n < w.length ? w[n].toLowerCase().replace(/['’].*$/, '').replace(/[^a-zàâéèêëîïôûüç]/g, '') : '';
+    if (PT_AVANT.has(prev) || PT_APRES.has(next)) continue;
+    w[i] = '.'; if (p >= 0) for (let k = p + 1; k < i; k++) w[k] = '';
+  }
+  return w.join('');
+}
+// Remise en forme typographique du texte dicté (espaces, majuscules en début de phrase)
+function typoDictee(s, debut = true) {
+  s = s.replace(/[ \t]+/g, ' ')
+    .replace(/ *\n */g, '\n')
+    .replace(/ +([,.…])/g, '$1')
+    .replace(/([,.…])(?=[^\s\d,.…»)])/g, '$1 ')
+    .replace(/ *([;:!?]) */g, ' $1 ')
+    .replace(/« */g, '« ').replace(/ *»/g, ' »')
+    .replace(/\( +/g, '(').replace(/ +\)/g, ')').replace(/(\S)\(/g, '$1 (')
+    .replace(/ +\n/g, '\n').replace(/\n /g, '\n')
+    .replace(/[ \t]+/g, ' ')
+    .replace(/\s+$/, '').replace(/^\s+/, '');
+  s = s.replace(/(^|[.!?…]\s+|\n\s*)([a-zàâéèêëîïôûüç])/g, (m, a, b, off) => (off === 0 && !debut) ? m : a + b.toUpperCase());
+  return s;
+}
+// Nettoyage typographique léger avant enregistrement (ne touche jamais aux mots).
+// Utile aussi pour la dictée du clavier iPhone, qui laisse « place . » ou « Entre parenthèses … ) ».
+function nettoyerRecit(t) {
+  if (!t) return t;
+  return t
+    .replace(/\r/g, '')
+    .replace(/\b[Ee]ntre parenth[eè]ses?\s+([^()\n]*?)\s*\)/g, '($1)')
+    .replace(/[ \t]+([,.…)])/g, '$1')
+    .replace(/\([ \t]+/g, '(')
+    .replace(/[ \t]*\n[ \t]*/g, '\n')
+    .replace(/([,.;:!?…])(?=[A-Za-zÀ-ÿ])/g, '$1 ')
+    .replace(/[ \t]{2,}/g, ' ')
+    .trim();
+}
+// 2) Ponctuation automatique après la dictée (fonction ponctuer : aucun mot n'est changé)
+function manquePonctuation(t) {
+  const mots = (t.match(/[\p{L}\p{N}]+/gu) || []).length;
+  if (mots < 12) return false;
+  const p = (t.match(/[.,;:!?…\n]/g) || []).length;
+  return p < mots / 25;
+}
+async function ponctuerTexte(t) {
+  const { data, error } = await sb.functions.invoke('ponctuer', { body: { texte: t } });
+  if (error || !data || !data.texte) return null;
+  return data.modifie ? data.texte : null;
+}
+
 function renderRecueil() {
   if (recognition && recognizing) {
     try { recognition.onend = null; recognition.stop(); } catch (e) {}
@@ -716,6 +795,28 @@ function renderRecueil() {
     $('#recit-text').focus();
   };
 
+  // Après la dictée : si le texte n'a presque pas de ponctuation, on la fait ajouter (sans changer les mots)
+  async function autoPonctuation(dicte) {
+    const el = $('#recit-text');
+    if (!el || !dicte.trim()) return;
+    const avant = el.value;
+    if (!manquePonctuation(avant)) return;
+    micHint.textContent = 'Ajout de la ponctuation…';
+    el.readOnly = true;
+    let res = null;
+    try { res = await ponctuerTexte(avant); } catch (e) {}
+    const el2 = $('#recit-text');
+    if (!el2) return;
+    el2.readOnly = false;
+    if (recognizing) return;
+    if (!res || el2.value !== avant) { micHint.textContent = relireHint; return; }
+    el2.value = res; updateContinueState();
+    micHint.innerHTML = 'Ponctuation ajoutée, sans changer vos mots. Relisez et corrigez si besoin. <button class="link-btn" id="pt-undo" style="padding:0 0 0 4px;font-size:inherit">Annuler</button>';
+    const u = $('#pt-undo');
+    if (u) u.onclick = () => { const e3 = $('#recit-text'); if (e3) { e3.value = avant; updateContinueState(); } micHint.textContent = relireHint; };
+    el2.addEventListener('input', () => { if ($('#pt-undo')) micHint.textContent = relireHint; }, { once: true });
+  }
+
   const dictee = () => {
     if (!SpeechRec) {
       micHint.textContent = "La dictée vocale n'est pas disponible sur ce navigateur : écrivez votre rêve.";
@@ -730,7 +831,8 @@ function renderRecueil() {
     recognition.lang = 'fr-FR';
     recognition.continuous = true;
     recognition.interimResults = true;
-    let finalTranscript = state.recit ? state.recit + ' ' : '';
+    const prefixe = state.recit ? state.recit + (/\n$/.test(state.recit) ? '' : ' ') : '';
+    let dicte = '';
     showTextArea(state.recit || '');
     recognition.onstart = () => {
       recognizing = true;
@@ -741,11 +843,14 @@ function renderRecueil() {
       let interim = '';
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const t = event.results[i][0].transcript;
-        if (event.results[i].isFinal) finalTranscript += t + ' ';
-        else interim += t;
+        if (event.results[i].isFinal) dicte += ' ' + commandesVocales(t);
+        else interim += ' ' + t;
       }
       const el = $('#recit-text');
-      if (el) { el.value = (finalTranscript + interim).trim(); updateContinueState(); el.scrollTop = el.scrollHeight; }
+      if (el) {
+        el.value = (prefixe + typoDictee(dicte + (interim ? ' ' + commandesVocales(interim) : ''), !prefixe || /[.!?…\n]\s*$/.test(prefixe))).trim();
+        updateContinueState(); el.scrollTop = el.scrollHeight;
+      }
     };
     recognition.onerror = (e) => {
       const messages = {
@@ -761,6 +866,7 @@ function renderRecueil() {
       recognizing = false;
       root.querySelectorAll('.mic-btn, .mic-mini').forEach(b => b.classList.remove('recording'));
       micHint.textContent = state.avantM ? defaultHint : relireHint;
+      autoPonctuation(dicte);
     };
     recognition.start();
   };
@@ -769,6 +875,7 @@ function renderRecueil() {
 
   $('#recueil-continue').onclick = async () => {
     if (!state.recit) return;
+    state.recit = nettoyerRecit(state.recit);
     if (state.avantM) {
       const y = parseInt(state.avantDate.y, 10), m = parseInt(state.avantDate.m, 10) || 0, d = parseInt(state.avantDate.d, 10) || 0;
       const now = new Date();
@@ -1257,14 +1364,25 @@ function bindRecit(reve) {
   const edit = () => {
     box.innerHTML = `<h3>Le rêve</h3><div class="piste-edit recit-edit">
       <textarea maxlength="20000"></textarea>
-      <div class="row"><button class="btn btn-ghost" id="rc-cancel">Annuler</button><button class="btn btn-primary" id="rc-save">Enregistrer</button></div></div>`;
+      <div class="row"><button class="link-btn" id="rc-punct" style="padding-left:0;margin-right:auto" hidden>Ajouter la ponctuation</button><button class="btn btn-ghost" id="rc-cancel">Annuler</button><button class="btn btn-primary" id="rc-save">Enregistrer</button></div></div>`;
     const ta = box.querySelector('textarea');
     ta.value = reve.transcription || '';
     ta.focus();
+    const pb = box.querySelector('#rc-punct');
+    if (manquePonctuation(ta.value)) pb.hidden = false;
+    pb.onclick = async () => {
+      const avant = ta.value;
+      pb.disabled = true; pb.textContent = 'Ponctuation…'; ta.readOnly = true;
+      let res = null;
+      try { res = await ponctuerTexte(avant); } catch (e) {}
+      ta.readOnly = false; pb.disabled = false;
+      if (res && ta.value === avant) { ta.value = res; pb.textContent = 'Annuler la ponctuation'; pb.onclick = () => { ta.value = avant; pb.hidden = true; }; }
+      else { pb.textContent = 'Ponctuation indisponible'; }
+    };
     box.querySelector('#rc-cancel').onclick = () => show();
     box.querySelector('#rc-save').onclick = async (ev) => {
       const btn = ev.currentTarget;
-      const txt = ta.value.trim();
+      const txt = nettoyerRecit(ta.value.trim());
       if (!txt) { ta.focus(); return; }
       if (txt === (reve.transcription || '').trim()) { show(); return; }
       btn.disabled = true; btn.textContent = 'Enregistrement…';
@@ -1915,7 +2033,7 @@ function render() {
 }
 
 // ---------- MISE À JOUR AUTOMATIQUE (app installée) ----------
-const APP_VERSION = '2026-10-23e';
+const APP_VERSION = '2026-10-26b';
 const SAFE_VIEWS = ['auth', 'journal', 'compte', 'synthese', 'legal', 'avant-ok', 'restitution'];
 async function checkUpdate() {
   if (location.protocol.indexOf('http') !== 0) return;
