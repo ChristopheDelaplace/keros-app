@@ -644,19 +644,21 @@ const PT_APRES = new Set(['de','du','des','d','mort','culminant','commun','faibl
 function commandesVocales(seg) {
   let s = ' ' + seg.trim() + ' ';
   const R = [
-    [/\s(?:point\s+)?(?:nouveau paragraphe)(?=\s)/gi, (m) => (/point/i.test(m) ? '.' : '') + '\n\n'],
-    [/\spoint\s+(?:à|a)\s+la\s+ligne(?=\s)/gi, '.\n'],
-    [/\s(?:retour\s+)?(?:à|a)\s+la\s+ligne(?=\s)/gi, '\n'],
-    [/\snouvelle\s+ligne(?=\s)/gi, '\n'],
-    [/\spoints?\s+d['’]\s?interrogation(?=\s)/gi, ' ?'],
-    [/\spoints?\s+d['’]\s?exclamation(?=\s)/gi, ' !'],
-    [/\spoints\s+de\s+suspension(?=\s)/gi, '…'],
-    [/\spoint[-\s]virgule(?=\s)/gi, ' ;'],
-    [/\sdeux[-\s]points(?=\s)/gi, ' :'],
-    [/\svirgule(?=\s)/gi, ','],
-    [/\s(?:ouvre[zr]?|ouvrir)\s+les\s+guillemets(?=\s)/gi, ' «'],
-    [/\s(?:ferme[zr]?|fermer)\s+les\s+guillemets(?=\s)/gi, ' »'],
-    [/\spoint\s+final(?=\s)/gi, '.'],
+    [/\s(?:point\s+)?(?:nouveau paragraphe)(?=[\s,.;:!?…)»]|$)/gi, (m) => (/point/i.test(m) ? '.' : '') + '\n\n'],
+    [/\spoint\s+(?:à|a)\s+la\s+ligne(?=[\s,.;:!?…)»]|$)/gi, '.\n'],
+    [/\s(?:retour\s+)?(?:à|a)\s+la\s+ligne(?=[\s,.;:!?…)»]|$)/gi, '\n'],
+    [/\snouvelle\s+ligne(?=[\s,.;:!?…)»]|$)/gi, '\n'],
+    [/\spoints?\s+d['’]\s?interrogation(?=[\s,.;:!?…)»]|$)/gi, ' ?'],
+    [/\spoints?\s+d['’]\s?exclamation(?=[\s,.;:!?…)»]|$)/gi, ' !'],
+    [/\spoints\s+de\s+suspension(?=[\s,.;:!?…)»]|$)/gi, '…'],
+    [/\spoint[-\s]virgule(?=[\s,.;:!?…)»]|$)/gi, ' ;'],
+    [/\sdeux[-\s]points(?=[\s,.;:!?…)»]|$)/gi, ' :'],
+    [/\svirgule(?=[\s,.;:!?…)»]|$)/gi, ','],
+    [/\s(?:ouvre[zr]?|ouvrir)\s+les\s+guillemets(?=[\s,.;:!?…)»]|$)/gi, ' «'],
+    [/\s(?:ferme[zr]?|fermer)\s+les\s+guillemets(?=[\s,.;:!?…)»]|$)/gi, ' »'],
+    [/\s(?:(?:ouvre[zr]?|ouvrir)\s+(?:la\s+)?parenth[eè]se|entre\s+parenth[eè]ses?)(?=[\s,.;:!?…)»]|$)/gi, ' ('],
+    [/\s(?:ferme[zr]?|fermer)\s+(?:la\s+)?parenth[eè]se(?=[\s,.;:!?…)»]|$)/gi, ')'],
+    [/\spoint\s+final(?=[\s,.;:!?…)»]|$)/gi, '.'],
   ];
   for (const [re, rep] of R) s = s.replace(re, rep);
   // « point » seul : commande, sauf s'il fait partie d'une expression (« le point de vue », « au point »…)
@@ -680,11 +682,26 @@ function typoDictee(s, debut = true) {
     .replace(/([,.…])(?=[^\s\d,.…»)])/g, '$1 ')
     .replace(/ *([;:!?]) */g, ' $1 ')
     .replace(/« */g, '« ').replace(/ *»/g, ' »')
+    .replace(/\( +/g, '(').replace(/ +\)/g, ')').replace(/(\S)\(/g, '$1 (')
     .replace(/ +\n/g, '\n').replace(/\n /g, '\n')
     .replace(/[ \t]+/g, ' ')
     .replace(/\s+$/, '').replace(/^\s+/, '');
   s = s.replace(/(^|[.!?…]\s+|\n\s*)([a-zàâéèêëîïôûüç])/g, (m, a, b, off) => (off === 0 && !debut) ? m : a + b.toUpperCase());
   return s;
+}
+// Nettoyage typographique léger avant enregistrement (ne touche jamais aux mots).
+// Utile aussi pour la dictée du clavier iPhone, qui laisse « place . » ou « Entre parenthèses … ) ».
+function nettoyerRecit(t) {
+  if (!t) return t;
+  return t
+    .replace(/\r/g, '')
+    .replace(/\b[Ee]ntre parenth[eè]ses?\s+([^()\n]*?)\s*\)/g, '($1)')
+    .replace(/[ \t]+([,.…)])/g, '$1')
+    .replace(/\([ \t]+/g, '(')
+    .replace(/[ \t]*\n[ \t]*/g, '\n')
+    .replace(/([,.;:!?…])(?=[A-Za-zÀ-ÿ])/g, '$1 ')
+    .replace(/[ \t]{2,}/g, ' ')
+    .trim();
 }
 // 2) Ponctuation automatique après la dictée (fonction ponctuer : aucun mot n'est changé)
 function manquePonctuation(t) {
@@ -858,6 +875,7 @@ function renderRecueil() {
 
   $('#recueil-continue').onclick = async () => {
     if (!state.recit) return;
+    state.recit = nettoyerRecit(state.recit);
     if (state.avantM) {
       const y = parseInt(state.avantDate.y, 10), m = parseInt(state.avantDate.m, 10) || 0, d = parseInt(state.avantDate.d, 10) || 0;
       const now = new Date();
@@ -1364,7 +1382,7 @@ function bindRecit(reve) {
     box.querySelector('#rc-cancel').onclick = () => show();
     box.querySelector('#rc-save').onclick = async (ev) => {
       const btn = ev.currentTarget;
-      const txt = ta.value.trim();
+      const txt = nettoyerRecit(ta.value.trim());
       if (!txt) { ta.focus(); return; }
       if (txt === (reve.transcription || '').trim()) { show(); return; }
       btn.disabled = true; btn.textContent = 'Enregistrement…';
@@ -2015,7 +2033,7 @@ function render() {
 }
 
 // ---------- MISE À JOUR AUTOMATIQUE (app installée) ----------
-const APP_VERSION = '2026-10-26a';
+const APP_VERSION = '2026-10-26b';
 const SAFE_VIEWS = ['auth', 'journal', 'compte', 'synthese', 'legal', 'avant-ok', 'restitution'];
 async function checkUpdate() {
   if (location.protocol.indexOf('http') !== 0) return;
