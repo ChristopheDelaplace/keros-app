@@ -342,6 +342,9 @@
   .glyph-inline { display: inline-block; height: 0.8em; width: auto; aspect-ratio: 68 / 52; vertical-align: -0.02em; overflow: visible; }
   .avm { font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; color: var(--rose); background: var(--rose-soft); padding: 2px 7px; border-radius: 999px; white-space: nowrap; }
   .avant-text { white-space: pre-wrap; line-height: 1.55; font-size: 14.5px; color: var(--ink); margin: 14px 0; }
+  .lang-switch { display: flex; justify-content: center; align-items: center; gap: 6px; margin-top: 10px; font-size: 13px; color: var(--ink-faint); }
+  .lang-switch button { background: none; border: 0; padding: 4px 6px; color: inherit; font: inherit; letter-spacing: .08em; cursor: pointer; opacity: .7; }
+  .lang-switch button.on { opacity: 1; color: var(--accent); font-weight: 600; }
   .footer-glyph { position: absolute; left: 0; right: 0; bottom: 12px; display: flex; justify-content: center; color: var(--accent); opacity: 0.55; pointer-events: none; z-index: 2; }
   .footer-actions .btn { flex: 1; }
 </style>
@@ -382,8 +385,189 @@ let state = {
 };
 
 const root = document.getElementById('app-root');
-function h(html) { root.innerHTML = html; }
+function h(html) { root.innerHTML = html; traduireDom(root); }
 function $(sel) { return root.querySelector(sel); }
+
+// ---------- LANGUE (français / anglais) ----------
+// Langue de l'interface : choix du compte (user_metadata.langue), sinon dernier choix sur cet appareil, sinon langue du navigateur.
+let LANG = (() => { try { const l = localStorage.getItem('mk_lang'); if (l === 'fr' || l === 'en') return l; } catch (e) {} return /^fr/i.test(navigator.language || 'fr') ? 'fr' : 'en'; })();
+const L = (fr, en) => (LANG === 'en' ? en : fr);
+const LOCALE = () => (LANG === 'en' ? 'en-GB' : 'fr-CH');
+function setLang(l) {
+  LANG = l === 'en' ? 'en' : 'fr';
+  document.documentElement.lang = LANG;
+  try { localStorage.setItem('mk_lang', LANG); } catch (e) {}
+}
+document.documentElement.lang = LANG;
+
+// Traduction de l'interface : textes exacts (après suppression des espaces autour)
+const I18N_EN = {
+  // Navigation, général
+  'Journal': 'Journal', 'Sortir': 'Log out', 'Retour': 'Back', 'Annuler': 'Cancel', 'Enregistrer': 'Save', 'Modifier': 'Edit',
+  'Copier': 'Copy', 'Copié ✓': 'Copied ✓', 'Réessayer': 'Try again', 'Confirmer': 'Confirm', 'Continuer →': 'Continue →', 'Passer →': 'Skip →',
+  'Un instant…': 'One moment…', 'Enregistrement…': 'Saving…', 'Envoyer': 'Send', 'Bientôt': 'Coming soon', 'Retirer': 'Remove',
+  'Sans titre': 'Untitled', 'Sans date': 'No date', 'mois inconnu': 'unknown month', 'Inconnu': 'Unknown',
+  'Mon compte': 'My account', 'CGU': 'Terms', 'Confidentialité': 'Privacy', 'Revenir en haut': 'Back to top',
+  // Connexion
+  'Prénom': 'First name', 'Genre': 'Gender', '(optionnel)': '(optional)', 'Je préfère ne pas dire': 'Prefer not to say',
+  'Femme': 'Woman', 'Homme': 'Man', 'Autre': 'Other', 'Email': 'Email', 'Mot de passe': 'Password',
+  "S'inscrire": 'Sign up', 'Envoyer le lien': 'Send the link', 'Se connecter': 'Log in',
+  'Déjà un compte ? Se connecter': 'Already have an account? Log in', 'Retour à la connexion': 'Back to login',
+  "Pas de compte ? S'inscrire": 'No account? Sign up', 'Mot de passe oublié ?': 'Forgot your password?',
+  "Si un compte existe pour cette adresse, un lien de réinitialisation vient d'être envoyé.": 'If an account exists for this address, a reset link has just been sent.',
+  'Compte créé. Si la confirmation par email est activée, vérifiez votre boîte avant de vous connecter.': 'Account created. If email confirmation is enabled, check your inbox before logging in.',
+  'Nouveau mot de passe': 'New password', 'Les deux mots de passe ne correspondent pas.': 'The two passwords do not match.',
+  // Saisie
+  'Racontez votre rêve,': 'Tell your dream,', 'là, tout de suite.': 'right now.',
+  "Un rêve d'avant mykeros,": 'A dream from before mykeros,', 'tel que vous vous en souvenez.': 'as you remember it.',
+  'Année': 'Year', 'Mois': 'Month', 'Jour': 'Day', 'N° dans votre journal': 'No. in your journal', '(facultatif)': '(optional)',
+  "Démarrer l'enregistrement": 'Start recording', 'Dicter': 'Dictate', 'Écrire plutôt': 'Write instead',
+  'Racontez ce dont vous vous souvenez…': 'Tell what you remember…',
+  "Une date approximative suffit : seule l'année est nécessaire.": 'An approximate date is enough: only the year is required.',
+  'Touchez le micro et racontez, comme si vous y étiez encore.': 'Tap the mic and tell it, as if you were still there.',
+  'Relisez et corrigez si besoin, puis continuez.': 'Read it over and correct if needed, then continue.',
+  'Je vous écoute… touchez le micro pour arrêter.': "I'm listening… tap the mic to stop.",
+  'Ajout de la ponctuation…': 'Adding punctuation…',
+  'Ponctuation ajoutée, sans changer vos mots. Relisez et corrigez si besoin.': 'Punctuation added, without changing your words. Read it over and correct if needed.',
+  "La dictée vocale n'est pas disponible sur ce navigateur : écrivez votre rêve.": 'Voice dictation is not available in this browser: please type your dream.',
+  "Le service de dictée n'est pas disponible dans ce contexte.": 'The dictation service is not available here.',
+  'Rien entendu — réessayez.': 'Nothing heard — try again.', 'Problème réseau pendant la dictée — réessayez.': 'Network problem during dictation — try again.',
+  'Aucun micro détecté sur cet appareil.': 'No microphone found on this device.',
+  "Micro bloqué. Cliquez sur l'icône de cadenas/site dans la barre d'adresse Chrome → Autorisations du site → Microphone → Autoriser, puis rechargez la page. Vérifiez aussi Réglages système macOS → Confidentialité et sécurité → Microphone → Chrome activé.": 'Microphone blocked. Allow microphone access for this site in your browser settings, then reload the page.',
+  'Indiquez aussi le mois, ou retirez le jour.': 'Please also give the month, or remove the day.',
+  "Indiquez l'année du rêve (entre 1900 et aujourd'hui).": "Please give the dream's year (between 1900 and today).",
+  "Cette date n'existe pas.": 'This date does not exist.', 'Ce rêve ne peut pas être dans le futur.': 'This dream cannot be in the future.',
+  'Le numéro du journal doit être un nombre entier positif.': 'The journal number must be a positive whole number.',
+  // Sentiments, nom, associations, contexte
+  "Qu'est-ce que ce rêve vous a fait ressentir ?": 'How did this dream make you feel?', "Jusqu'à trois sentiments": 'Up to three feelings',
+  'Propres aux rêves': 'Dream-specific', 'Autre…': 'Other…', 'Votre mot': 'Your word',
+  'Donnez un nom à ce rêve': 'Give this dream a name', 'Comme un titre, pour vous y retrouver': 'Like a title, to find it again',
+  'ex. Le Board / ComEx': 'e.g. The board meeting',
+  'On relit votre rêve pour en dégager les mots-clés…': 'Reading your dream to pick out its keywords…',
+  "L'extraction des mots-clés a échoué. Réessayer ?": 'Keyword extraction failed. Try again?',
+  'Associations': 'Associations', 'Ça vous fait penser à quoi ?': 'What does it bring to mind?',
+  'Ce qui vient, sans réfléchir…': 'Whatever comes, without thinking…', '120 caractères max': '120 characters max',
+  'Mot-clé suivant →': 'Next keyword →', 'Un dernier point': 'One last thing',
+  'Quelque chose de notable ces dernières 24h, ou à venir dans les 72h ?': 'Anything notable in the last 24 hours, or coming up in the next 72?',
+  'Rien de notable, ou bien…': 'Nothing notable, or…', 'Enregistrer le rêve →': 'Save the dream →', 'Voir la restitution →': 'See the reading →',
+  'On y réfléchit…': 'Thinking it over…',
+  // Lecture
+  'mykeros prend le temps de relier les fils…': 'mykeros is taking the time to connect the threads…',
+  'La restitution a échoué. Réessayer ?': 'The reading failed. Try again?', 'Rêve ajouté': 'Dream added',
+  'Il est classé à sa date dans votre journal (': 'It is filed at its date in your journal (', ') et comptera dans vos synthèses.': ') and will count in your syntheses.',
+  "Ajouter un autre rêve d'avant mykeros": 'Add another dream from before mykeros', 'Voir le journal': 'See the journal',
+  "Rêve d'avant mykeros : il compte dans votre synthèse. Vous pouvez aussi demander une lecture de ce rêve seul, sans associations : elle restera prudente.": 'Dream from before mykeros: it counts in your synthesis. You can also ask for a reading of this dream on its own, without associations: it will stay cautious.',
+  'Obtenir une lecture': 'Get a reading', 'Retour au journal': 'Back to the journal', 'Supprimer ce rêve': 'Delete this dream',
+  'Le rêve': 'The dream', 'Tout lire': 'Read all', 'Réduire': 'Collapse', 'Ajouter la ponctuation': 'Add punctuation',
+  'Ponctuation…': 'Punctuating…', 'Annuler la ponctuation': 'Undo punctuation', 'Ponctuation indisponible': 'Punctuation unavailable',
+  "Récit mis à jour. La lecture ci-dessous reste celle du récit d'origine ; la synthèse utilisera le nouveau texte.": 'Dream updated. The reading below is still based on the original text; the synthesis will use the new one.',
+  'Mots-clés et associations': 'Keywords and associations', 'Contexte': 'Context',
+  'Votre réaction': 'Your response', 'Corriger un point, préciser, réagir : la synthèse en tiendra compte.': 'Correct a point, add detail, respond: the synthesis will take it into account.',
+  'Réagir à cette lecture': 'Respond to this reading', 'Ce qui sonne juste, ce qui ne colle pas, ce que vous ajouteriez…': 'What rings true, what does not fit, what you would add…',
+  'Ce qui vous vient…': 'Whatever comes to you…', 'Échange terminé · vos réponses nourrissent la synthèse': 'Exchange complete · your answers feed the synthesis',
+  "La réponse n'a pas pu être envoyée. Réessayez dans un instant.": 'Your answer could not be sent. Please try again in a moment.',
+  'Mode journal seul : pas de lecture (réglable dans Mon compte).': 'Journal-only mode: no reading (change it in My account).',
+  "La lecture de ce rêve n'a pas pu être générée.": 'The reading for this dream could not be generated.', "Relancer l'analyse": 'Run it again',
+  'Passer en Premium pour nommer ces figures et approfondir la lecture.': 'Go Premium to name these figures and deepen the reading.',
+  'Nouveau rêve': 'New dream', 'Le paiement Premium arrive bientôt.': 'Premium payment is coming soon.',
+  'Supprimer définitivement ce rêve ?': 'Permanently delete this dream?',
+  'Supprimer définitivement ce rêve, sa lecture, ses mots-clés et ses associations ?': 'Permanently delete this dream, its reading, its keywords and its associations?',
+  'Erreur en enregistrant les associations :': 'Error saving the associations:',
+  // Grands rêves
+  'Grand rêve': 'Big dream', 'Grand rêve suggéré': 'Suggested big dream', '★ Grand rêve': '★ Big dream',
+  'Est-ce un grand rêve ?': 'Is this a big dream?', "★ Oui, c'est un grand rêve": '★ Yes, it is a big dream', 'Non': 'No',
+  '☆ Marquer comme grand rêve': '☆ Mark as a big dream',
+  // Journal
+  'Rechercher dans vos rêves': 'Search your dreams', "Aucun rêve consigné pour l'instant.": 'No dreams recorded yet.',
+  'Synthèse': 'Synthesis', 'Raconter un nouveau rêve': 'Tell a new dream', "Ajouter un rêve d'avant mykeros": 'Add a dream from before mykeros',
+  // Synthèse
+  'Fil rouge': 'Common thread', 'Ce qui évolue': 'What is changing', 'Pistes à explorer': 'Paths to explore',
+  'Vos réponses nourriront la prochaine synthèse.': 'Your answers will feed the next synthesis.', 'Répondre': 'Answer',
+  'Ce que cette question éveille en vous…': 'What this question stirs in you…',
+  "La synthèse croise l'ensemble de vos rêves : fil rouge, figures qui reviennent, motifs, évolution dans le temps.": 'The synthesis looks across all your dreams: common thread, recurring figures, motifs, change over time.',
+  'Synthèse en cours…': 'Synthesis in progress…', 'Actualiser la synthèse': 'Update the synthesis', 'Générer la synthèse': 'Generate the synthesis',
+  'Lancement…': 'Starting…', 'La synthèse est réservée aux comptes Premium.': 'The synthesis is for Premium accounts.',
+  "La synthèse n'a pas pu être lancée. Réessayez dans un instant.": 'The synthesis could not be started. Please try again in a moment.',
+  "La synthèse n'a pas pu être générée. Réessayez dans un instant.": 'The synthesis could not be generated. Please try again in a moment.',
+  // Compte
+  'Langue': 'Language', 'Mode journal seul': 'Journal-only mode',
+  'Pour celles et ceux qui sont en analyse : vous consignez vos rêves, mots-clés et associations, sans lecture, sans dialogue avec Kéros ni synthèse. Vous apportez votre matériau en séance, sans interprétation toute faite. Vos lectures déjà faites sont conservées et réapparaissent si vous désactivez ce mode.': 'For people in analysis: you record your dreams, keywords and associations, with no reading, no dialogue with Kéros and no synthesis. You bring your material to your sessions without a ready-made interpretation. Readings already made are kept and come back if you turn this mode off.',
+  'Exporter mes données': 'Export my data', 'Supprimer mon compte': 'Delete my account', 'Genre enregistré.': 'Gender saved.',
+  'Mode journal seul activé.': 'Journal-only mode on.', 'Lectures, Kéros et synthèse réactivés.': 'Readings, Kéros and synthesis back on.',
+  'Langue enregistrée.': 'Language saved.',
+  'Cette action est définitive : compte, rêves, lectures, tout sera effacé.\nTapez SUPPRIMER pour confirmer.': 'This cannot be undone: account, dreams, readings, everything will be erased.\nType DELETE to confirm.',
+  'Suppression impossible :': 'Could not delete:',
+  'ex. 1998': 'e.g. 1998', 'ex. 276': 'e.g. 276', "Conditions d'utilisation": 'Terms of use',
+  // Mois
+  'janvier': 'January', 'février': 'February', 'mars': 'March', 'avril': 'April', 'mai': 'May', 'juin': 'June', 'juillet': 'July',
+  'août': 'August', 'septembre': 'September', 'octobre': 'October', 'novembre': 'November', 'décembre': 'December',
+};
+// Textes avec une partie variable
+const I18N_EN_RE = [
+  [/^(\d+) rêves?$/, (m, n) => `${n} dream${n === '1' ? '' : 's'}`],
+  [/^★ Grands rêves \((\d+)\)$/, (m, n) => `★ Big dreams (${n})`],
+  [/^Mot-clé (\d+) sur (\d+)$/, (m, a, b) => `Keyword ${a} of ${b}`],
+  [/^(\d+) rêves? contien(?:nen)?t « (.*) »$/, (m, n, q) => `${n} dream${n === '1' ? '' : 's'} contain${n === '1' ? 's' : ''} “${q}”`],
+  [/^Aucun rêve ne contient « (.*) »$/, (m, q) => `No dream contains “${q}”`],
+  [/^Générée le (.+) · (\d+) rêves$/, (m, d, n) => `Generated on ${d} · ${n} dreams`],
+  [/^(.+) · (\d+) rêves$/, (m, d, n) => `${d} · ${n} dreams`],
+  [/^Il faut au moins (\d+) rêves pour une synthèse\. Vous en avez (\d+)\.$/, (m, a, b) => `A synthesis needs at least ${a} dreams. You have ${b}.`],
+  [/^Il faut au moins (\d+) rêves\.$/, (m, a) => `At least ${a} dreams are needed.`],
+  [/^Disponible avec Premium, à partir de (\d+) rêves\.$/, (m, a) => `Available with Premium, from ${a} dreams.`],
+  [/^Problème de dictée \((.+)\) — vous pouvez écrire directement\.$/, (m, e) => `Dictation problem (${e}) — you can type instead.`],
+  [/^Le numéro (\d+) est déjà utilisé par un autre rêve d'avant mykeros\.$/, (m, n) => `Number ${n} is already used by another dream from before mykeros.`],
+  [/^Ce rêve pourrait dater d'après votre inscription \((.+)\) : précisez le jour\.$/, (m, d) => `This dream may date from after you signed up (${d}): please give the day.`],
+  [/^Ce rêve date d'après votre inscription à mykeros \((.+)\)\. Il sera ajouté à votre journal comme un rêve mykeros, avec émotions et mots-clés\. Continuer \?$/, (m, d) => `This dream dates from after you joined mykeros (${d}). It will be added to your journal as a mykeros dream, with feelings and keywords. Continue?`],
+  [/^Erreur à l'enregistrement du rêve : (.*)$/s, (m, e) => `Error saving the dream: ${e}`],
+  [/^Erreur en enregistrant les associations : (.*)$/s, (m, e) => `Error saving the associations: ${e}`],
+  [/^Suppression impossible : (.*)$/s, (m, e) => `Could not delete: ${e}`],
+  [/^ · lecture en cours…$/, () => ' · reading in progress…'],
+];
+function tr(s) {
+  if (LANG !== 'en' || !s) return s;
+  const k = s.trim();
+  if (!k) return s;
+  const hit = I18N_EN[k];
+  if (hit !== undefined) return s.replace(k, hit);
+  for (const [re, f] of I18N_EN_RE) if (re.test(k)) return s.replace(k, k.replace(re, f));
+  return s;
+}
+const I18N_ATTRS = ['placeholder', 'aria-label', 'title'];
+function traduireDom(node) {
+  if (LANG !== 'en' || !node) return;
+  if (node.nodeType === 3) { if (node.parentNode && node.parentNode.tagName === 'TEXTAREA') return; const t = tr(node.nodeValue); if (t !== node.nodeValue) node.nodeValue = t; return; }
+  if (node.nodeType !== 1) return;
+  if (node.closest && node.closest('[data-noi18n]')) return;
+  const w = document.createTreeWalker(node, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT, {
+    acceptNode: n => (n.nodeType === 1 ? (n.hasAttribute('data-noi18n') || n.tagName === 'SCRIPT' || n.tagName === 'STYLE') : (n.parentNode && n.parentNode.tagName === 'TEXTAREA')) ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT,
+  });
+  let n = node;
+  do {
+    if (n.nodeType === 3) { const t = tr(n.nodeValue); if (t !== n.nodeValue) n.nodeValue = t; }
+    else for (const a of I18N_ATTRS) if (n.hasAttribute && n.hasAttribute(a)) { const v = n.getAttribute(a), t = tr(v); if (t !== v) n.setAttribute(a, t); }
+  } while ((n = w.nextNode()));
+}
+let i18nObs = null;
+function observerTraduction(rootEl) {
+  if (i18nObs) return;
+  i18nObs = new MutationObserver(muts => {
+    if (LANG !== 'en') return;
+    for (const m of muts) {
+      if (m.type === 'characterData') traduireDom(m.target);
+      else if (m.type === 'attributes') traduireDom(m.target);
+      else m.addedNodes.forEach(traduireDom);
+    }
+  });
+  i18nObs.observe(rootEl, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: I18N_ATTRS });
+}
+// Messages système (alert, confirm, prompt)
+{
+  const a = window.alert.bind(window), c = window.confirm.bind(window), p = window.prompt.bind(window);
+  window.alert = (m) => a(tr(String(m)));
+  window.confirm = (m) => c(tr(String(m)));
+  window.prompt = (m, d) => p(tr(String(m)), d);
+}
+observerTraduction(root);
 
 function escapeHtml(s) {
   return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -391,7 +575,7 @@ function escapeHtml(s) {
 
 function fmtDate(d) {
   const dt = new Date(d);
-  return dt.toLocaleDateString('fr-CH', { day: '2-digit', month: 'short', year: 'numeric' });
+  return dt.toLocaleDateString(LOCALE(), { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
 // Glyphe ⅃L dessiné comme le logo (mêmes traits, cadré serré) pour s'aligner sur le texte
@@ -403,8 +587,8 @@ function parseYMD(d) { const [y, m, dd] = String(d).split('-').map(Number); retu
 function fmtDateR(r) {
   const { y, m, d } = parseYMD(r.date);
   if (r.date_precision === 'annee') return String(y);
-  if (r.date_precision === 'mois') return new Date(y, m - 1, 1).toLocaleDateString('fr-CH', { month: 'long', year: 'numeric' });
-  return new Date(y, m - 1, d).toLocaleDateString('fr-CH', { day: '2-digit', month: 'short', year: 'numeric' });
+  if (r.date_precision === 'mois') return new Date(y, m - 1, 1).toLocaleDateString(LOCALE(), { month: 'long', year: 'numeric' });
+  return new Date(y, m - 1, d).toLocaleDateString(LOCALE(), { day: '2-digit', month: 'short', year: 'numeric' });
 }
 function excerpt(t, n) {
   const w = String(t || '').trim().split(/\s+/);
@@ -436,6 +620,14 @@ async function loadProfileAndGo() {
     ({ data: profile } = await sb.from('profiles').select('*').eq('id', uid).maybeSingle());
   }
   state.profile = profile;
+  const lg = state.session.user.user_metadata?.langue;
+  if (lg === 'fr' || lg === 'en') setLang(lg);
+  else {
+    // Compte sans langue enregistrée : choix explicite fait sur cet appareil (FR · EN), sinon français
+    let choisi = null; try { choisi = localStorage.getItem('mk_lang'); } catch (e) {}
+    setLang(choisi === 'en' ? 'en' : 'fr');
+    if (choisi) sb.auth.updateUser({ data: { langue: LANG } }).catch(() => {});
+  }
   signalerOuverture();
   if (await reprendreDernierePage()) return;
   state.view = 'recueil';
@@ -541,17 +733,22 @@ function renderAuth() {
           ${isSignup ? `<div class="field"><label>Genre <span style="opacity:.6">(optionnel)</span></label><select id="auth-genre"><option value="">Je préfère ne pas dire</option><option value="femme"${d.genre === 'femme' ? ' selected' : ''}>Femme</option><option value="homme"${d.genre === 'homme' ? ' selected' : ''}>Homme</option><option value="autre"${d.genre === 'autre' ? ' selected' : ''}>Autre</option></select></div>` : ''}
           <div class="field"><label>Email</label><input type="email" id="auth-email" required autocomplete="email" value="${escapeHtml(d.email || '')}"></div>
           ${isForgot ? '' : `<div class="field"><label>Mot de passe</label><input type="password" id="auth-password" required minlength="6" autocomplete="${isSignup ? 'new-password' : 'current-password'}"></div>`}
-          ${isSignup ? `<label class="check-row"><input type="checkbox" id="auth-consent" required><span>J'ai 15 ans ou plus et j'accepte les <a data-legal="cgu">conditions d'utilisation</a> et la <a data-legal="confidentialite">politique de confidentialité</a>, y compris le traitement de mes récits de rêves (données potentiellement sensibles).</span></label>` : ''}
+          ${isSignup ? `<label class="check-row"><input type="checkbox" id="auth-consent" required><span>${L(`J'ai 15 ans ou plus et j'accepte les <a data-legal="cgu">conditions d'utilisation</a> et la <a data-legal="confidentialite">politique de confidentialité</a>, y compris le traitement de mes récits de rêves (données potentiellement sensibles).`, `I am 15 or older and I accept the <a data-legal="cgu">terms of use</a> and the <a data-legal="confidentialite">privacy policy</a>, including the processing of my dream accounts (potentially sensitive data).`)}</span></label>` : ''}
           <button type="submit" class="btn btn-primary btn-block" id="auth-submit">${isSignup ? "S'inscrire" : isForgot ? 'Envoyer le lien' : 'Se connecter'}</button>
         </form>
         <button class="link-btn" id="auth-toggle">${isSignup ? 'Déjà un compte ? Se connecter' : isForgot ? 'Retour à la connexion' : "Pas de compte ? S'inscrire"}</button>
         ${mode === 'signin' ? `<button class="link-btn" id="auth-forgot" style="margin-top:2px">Mot de passe oublié ?</button>` : ''}
+        <div class="lang-switch" data-noi18n><button data-lang="fr"${LANG === 'fr' ? ' class="on"' : ''}>FR</button><span>·</span><button data-lang="en"${LANG === 'en' ? ' class="on"' : ''}>EN</button></div>
       </div>
       ${legalLinksHtml()}
     </div>
   `);
   bindTopNav();
   bindLegalLinks('auth');
+  root.querySelectorAll('.lang-switch [data-lang]').forEach(b => b.onclick = () => {
+    state.authDraft = { ...(state.authDraft || {}), email: $('#auth-email')?.value || '', prenom: $('#auth-prenom')?.value || '', genre: $('#auth-genre')?.value || '' };
+    setLang(b.dataset.lang); renderAuth();
+  });
   $('#auth-toggle').onclick = () => { state.authMode = (isSignup || isForgot) ? 'signin' : 'signup'; renderAuth(); };
   const fg = $('#auth-forgot'); if (fg) fg.onclick = () => { state.authDraft = { email: $('#auth-email').value }; state.authMode = 'forgot'; renderAuth(); };
   $('#auth-form').onsubmit = async (e) => {
@@ -570,7 +767,7 @@ function renderAuth() {
       } else if (isSignup) {
         const prenom = $('#auth-prenom')?.value.trim();
         const genre = $('#auth-genre')?.value || '';
-        const { error } = await sb.auth.signUp({ email, password, options: { data: { prenom, genre, consent_at: new Date().toISOString(), consent_version: CONSENT_VERSION } } });
+        const { error } = await sb.auth.signUp({ email, password, options: { data: { prenom, genre, langue: LANG, consent_at: new Date().toISOString(), consent_version: CONSENT_VERSION } } });
         if (error) throw error;
         state.authDraft = {};
         msgEl.innerHTML = `<div class="msg ok">Compte créé. Si la confirmation par email est activée, vérifiez votre boîte avant de vous connecter.</div>`;
@@ -642,6 +839,7 @@ let recognizing = false;
 const PT_AVANT = new Set(['le','un','au','à','a','ce','du','des','les','mon','ton','son','notre','votre','leur','quel','quelque','chaque','premier','dernier','bon','mauvais','petit','gros','même','sur','en','de']);
 const PT_APRES = new Set(['de','du','des','d','mort','culminant','commun','faible','fort','cardinal','chaud','noir','rouge','blanc','central']);
 function commandesVocales(seg) {
+  if (LANG === 'en') return commandesVocalesEn(seg);
   let s = ' ' + seg.trim() + ' ';
   const R = [
     [/\s(?:point\s+)?(?:nouveau paragraphe)(?=[\s,.;:!?…)»]|$)/gi, (m) => (/point/i.test(m) ? '.' : '') + '\n\n'],
@@ -674,8 +872,41 @@ function commandesVocales(seg) {
   }
   return w.join('');
 }
+// Commandes vocales en anglais (« comma », « full stop », « new line »…)
+function commandesVocalesEn(seg) {
+  let s = ' ' + seg.trim() + ' ';
+  const E = '(?=[\\s,.;:!?…)”]|$)';
+  const R = [
+    [new RegExp('\\s(?:full stop\\s+|period\\s+)?new paragraph' + E, 'gi'), (m) => (/stop|period/i.test(m) ? '.' : '') + '\n\n'],
+    [new RegExp('\\s(?:full stop|period)\\s+new line' + E, 'gi'), '.\n'],
+    [new RegExp('\\s(?:new line|next line)' + E, 'gi'), '\n'],
+    [new RegExp('\\squestion mark' + E, 'gi'), '?'],
+    [new RegExp('\\sexclamation (?:mark|point)' + E, 'gi'), '!'],
+    [new RegExp('\\s(?:ellipsis|dot dot dot)' + E, 'gi'), '…'],
+    [new RegExp('\\ssemicolon' + E, 'gi'), ';'],
+    [new RegExp('\\scolon' + E, 'gi'), ':'],
+    [new RegExp('\\scomma' + E, 'gi'), ','],
+    [new RegExp('\\s(?:close (?:quote|quotes|inverted commas)|end quote|unquote)' + E, 'gi'), '”'],
+    [new RegExp('\\s(?:open (?:quote|quotes|inverted commas)|quote)' + E, 'gi'), ' “'],
+    [new RegExp('\\s(?:open (?:bracket|parenthesis|paren))' + E, 'gi'), ' ('],
+    [new RegExp('\\s(?:close (?:bracket|parenthesis|paren))' + E, 'gi'), ')'],
+    [new RegExp('\\s(?:full stop|period)' + E, 'gi'), '.'],
+  ];
+  for (const [re, rep] of R) s = s.replace(re, rep);
+  return s;
+}
 // Remise en forme typographique du texte dicté (espaces, majuscules en début de phrase)
 function typoDictee(s, debut = true) {
+  if (LANG === 'en') {
+    s = s.replace(/[ \t]+/g, ' ')
+      .replace(/ *\n */g, '\n')
+      .replace(/ +([,.…;:!?”)])/g, '$1')
+      .replace(/([,.…;:!?])(?=[^\s\d,.…;:!?”)])/g, '$1 ')
+      .replace(/“ +/g, '“').replace(/\( +/g, '(').replace(/(\S)\(/g, '$1 (')
+      .replace(/[ \t]+/g, ' ').replace(/\s+$/, '').replace(/^\s+/, '');
+    s = s.replace(/(^|[.!?…]\s+|\n\s*)([a-z])/g, (m, a, b, off) => (off === 0 && !debut) ? m : a + b.toUpperCase());
+    return s.replace(/\bi\b/g, 'I');
+  }
   s = s.replace(/[ \t]+/g, ' ')
     .replace(/ *\n */g, '\n')
     .replace(/ +([,.…])/g, '$1')
@@ -828,7 +1059,7 @@ function renderRecueil() {
       return;
     }
     recognition = new SpeechRec();
-    recognition.lang = 'fr-FR';
+    recognition.lang = LANG === 'en' ? (/^en-/i.test(navigator.language || '') ? navigator.language : 'en-US') : 'fr-FR';
     recognition.continuous = true;
     recognition.interimResults = true;
     const prefixe = state.recit ? state.recit + (/\n$/.test(state.recit) ? '' : ' ') : '';
@@ -956,11 +1187,12 @@ const SENTIMENT_PAIRS = [
 ];
 const SENTIMENT_REVE = ['Étrangeté', 'Nostalgie', 'Émerveillement', 'Honte', 'Culpabilité', 'Impuissance', 'Soulagement', 'Désir', 'Solitude', 'Tendresse', 'Confusion', 'Paix'];
 const SENTIMENT_MAX = 3;
+const SENTIMENT_EN = { Joie: 'Joy', Tristesse: 'Sadness', Confiance: 'Trust', 'Dégoût': 'Disgust', Peur: 'Fear', 'Colère': 'Anger', Surprise: 'Surprise', Anticipation: 'Anticipation', 'Étrangeté': 'Strangeness', Nostalgie: 'Nostalgia', 'Émerveillement': 'Wonder', Honte: 'Shame', 'Culpabilité': 'Guilt', Impuissance: 'Helplessness', Soulagement: 'Relief', 'Désir': 'Desire', Solitude: 'Loneliness', Tendresse: 'Tenderness', Confusion: 'Confusion', Paix: 'Peace', 'Autre…': 'Other…' };
 
 function renderSentiment() {
   const selected = [];
   let autreOn = false;
-  const chipHtml = (v, cls) => `<button type="button" class="chip ${cls || ''}" data-val="${escapeHtml(v)}">${escapeHtml(v)}</button>`;
+  const chipHtml = (v0, cls) => { const v = LANG === 'en' ? (SENTIMENT_EN[v0] || v0) : v0; return `<button type="button" class="chip ${cls || ''}" data-val="${escapeHtml(v)}">${escapeHtml(v)}</button>`; };
   h(`
     ${topNav(true)}
     <div class="view rest-view">
@@ -1073,10 +1305,11 @@ async function startAssociations() {
     if (error) throw error;
     const mots = (data && data.mots_cles) || [];
     const CATS = ['personnage', 'lieu', 'objet', 'emotion', 'action'];
-    const normCat = c => { const v = String(c || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim(); return CATS.includes(v) ? v : 'objet'; };
+    const CAT_EN = { person: 'personnage', character: 'personnage', figure: 'personnage', place: 'lieu', location: 'lieu', setting: 'lieu', object: 'objet', thing: 'objet', feeling: 'emotion', action: 'action', event: 'action' };
+    const normCat = c => { let v = String(c || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim(); v = CAT_EN[v] || v; return CATS.includes(v) ? v : 'objet'; };
     state.keywords = mots.map(m => ({ texte: m.texte, categorie: normCat(m.categorie), association: '' }));
     if (state.keywords.length === 0) {
-      state.keywords = [{ texte: 'Un élément marquant', categorie: 'action', association: '' }];
+      state.keywords = [{ texte: L('Un élément marquant', 'A striking element'), categorie: 'action', association: '' }];
     }
     state.kwIndex = 0;
     state.view = 'associations';
@@ -1573,7 +1806,7 @@ const grandStar = r => { const e = grandEtat(r); return e === 'oui' ? '<span cla
 function grandBoxHtml(r) {
   const e = grandEtat(r);
   if (e === 'oui') return `<div class="gr-box"><span class="gr-lab">★ Grand rêve</span> <button class="link-btn" data-gr="null">Retirer</button></div>`;
-  if (e === 'suggere') return `<div class="gr-box gr-card"><div class="gr-q"><button class="st" data-gr="true" aria-label="Confirmer">☆</button>Est-ce un grand rêve ?</div><div class="gr-raison">mykeros le pense : ${r.gr_ia && r.gr_ia.raison ? escapeHtml(r.gr_ia.raison.charAt(0).toLowerCase() + r.gr_ia.raison.slice(1)) : 'ce rêve semble rare et marquant.'}</div><div class="gr-btns"><button class="gr-oui" data-gr="true">★ Oui, c'est un grand rêve</button><button class="gr-non" data-gr="false">Non</button></div></div>`;
+  if (e === 'suggere') return `<div class="gr-box gr-card"><div class="gr-q"><button class="st" data-gr="true" aria-label="Confirmer">☆</button>Est-ce un grand rêve ?</div><div class="gr-raison">${L('mykeros le pense : ', 'mykeros thinks so: ')}${r.gr_ia && r.gr_ia.raison ? escapeHtml(r.gr_ia.raison.charAt(0).toLowerCase() + r.gr_ia.raison.slice(1)) : L('ce rêve semble rare et marquant.', 'this dream seems rare and striking.')}</div><div class="gr-btns"><button class="gr-oui" data-gr="true">★ Oui, c'est un grand rêve</button><button class="gr-non" data-gr="false">Non</button></div></div>`;
   return `<div class="gr-box"><button class="link-btn" data-gr="true">☆ Marquer comme grand rêve</button></div>`;
 }
 function bindGrand(reve, redraw) {
@@ -1595,7 +1828,7 @@ function journalRowHtml(r) {
               <span class="num">${r.avant_m ? 'av.' + r.rang : '#' + r.rang}</span>
               <span class="meta">
                 <div class="name">${escapeHtml(r.nom || (r.avant_m ? excerpt(r.transcription, 7) : 'Sans titre'))}</div>
-                <div class="date">${fmtDateR(r)}${r.avant_m ? ` · <span class="avm">${AV_LABEL}</span>` : (r.sentiment ? ' · ' + escapeHtml(r.sentiment) : '')}${lectureEnCours(r) ? ' · lecture en cours…' : ''}</div>
+                <div class="date">${fmtDateR(r)}${r.avant_m ? ` · <span class="avm">${AV_LABEL}</span>` : (r.sentiment ? ' · ' + escapeHtml(r.sentiment) : '')}${lectureEnCours(r) ? L(' · lecture en cours…', ' · reading in progress…') : ''}</div>
                 <div class="hit"></div>
               </span>
               <span class="gr-col">${grandStar(r)}</span>
@@ -1914,6 +2147,9 @@ function renderCompte() {
         <div class="field"><label>Genre <span style="opacity:.6">(optionnel)</span></label>
           <select id="acc-genre"><option value="">Je préfère ne pas dire</option><option value="femme"${genre === 'femme' ? ' selected' : ''}>Femme</option><option value="homme"${genre === 'homme' ? ' selected' : ''}>Homme</option><option value="autre"${genre === 'autre' ? ' selected' : ''}>Autre</option></select>
         </div>
+        <div class="field"><label>Langue</label>
+          <select id="acc-lang" data-noi18n><option value="fr"${LANG === 'fr' ? ' selected' : ''}>Français</option><option value="en"${LANG === 'en' ? ' selected' : ''}>English</option></select>
+        </div>
         <label class="jo-toggle"><input type="checkbox" id="acc-jo"${u.user_metadata?.journal_seul ? ' checked' : ''}><span><div class="t">Mode journal seul</div><div class="d">Pour celles et ceux qui sont en analyse : vous consignez vos rêves, mots-clés et associations, sans lecture, sans dialogue avec Kéros ni synthèse. Vous apportez votre matériau en séance, sans interprétation toute faite. Vos lectures déjà faites sont conservées et réapparaissent si vous désactivez ce mode.</div></span></label>
         <button class="btn btn-ghost btn-block" id="acc-export">Exporter mes données</button>
         <div style="text-align:center"><button class="danger-link" id="acc-delete">Supprimer mon compte</button></div>
@@ -1927,6 +2163,13 @@ function renderCompte() {
   $('#acc-genre').onchange = async (e) => {
     const { error } = await sb.auth.updateUser({ data: { genre: e.target.value } });
     if (error) msg('error', error.message); else msg('ok', 'Genre enregistré.');
+  };
+  $('#acc-lang').onchange = async (e) => {
+    const l = e.target.value;
+    const { error } = await sb.auth.updateUser({ data: { langue: l } });
+    if (error) { e.target.value = LANG; return msg('error', error.message); }
+    if (state.session && state.session.user) state.session.user.user_metadata = { ...(state.session.user.user_metadata || {}), langue: l };
+    setLang(l); renderCompte(); msg('ok', L('Langue enregistrée.', 'Language saved.'));
   };
   $('#acc-jo').onchange = async (e) => {
     const on = e.target.checked;
@@ -1944,7 +2187,7 @@ function renderCompte() {
   };
   $('#acc-delete').onclick = async () => {
     const t = prompt('Cette action est définitive : compte, rêves, lectures, tout sera effacé.\nTapez SUPPRIMER pour confirmer.');
-    if (t !== 'SUPPRIMER') return;
+    if (!t || !['SUPPRIMER', 'DELETE'].includes(t.trim().toUpperCase())) return;
     const { error } = await sb.functions.invoke('delete-account', { body: {} });
     if (error) return msg('error', 'Suppression impossible : ' + (error.message || error));
     await sb.auth.signOut();
@@ -1986,15 +2229,41 @@ const LEGAL = {
     <p class="stamp">Version de test, mise à jour le 7 octobre 2026.</p>` },
 };
 
+const LEGAL_EN = {
+  confidentialite: { titre: 'Privacy', html: () => `
+    <p>mykeros is a project in its test phase. Here, simply, is what it does with your data.</p>
+    <p>Data controller: the publisher of mykeros, reachable at ${contactHtml()}.</p>
+    <h3>What we keep</h3>
+    <ul><li>Your email address, your first name and, if you wish, your gender.</li><li>Your dreams: account, feeling, title, keywords, associations, context and the generated reading.</li></ul>
+    <p>A dream can reveal sensitive information (health, intimate life, beliefs). By creating your account, you expressly consent to this content being processed to produce your readings.</p>
+    <h3>Why, and with whom</h3>
+    <ul><li>Only to run your journal and generate your readings. No advertising, no resale.</li><li>Data is hosted by Supabase in the European Union (Frankfurt). To generate a reading, the content of the dream is sent to Anthropic (United States), which provides the AI.</li><li>Technical emails (login, password) are sent by Resend, from the European Union.</li><li>Voice dictation is provided by the speech recognition service of your browser or device.</li><li>The publisher, as database administrator, can technically access stored content. The publisher undertakes not to consult it, except to solve a technical problem at your request or where the law requires it.</li></ul>
+    <h3>Your rights</h3>
+    <p>At any time you can export your data and delete your dreams or your account from “My account”: deletion is immediate and permanent. For any other request (access, correction, objection): ${contactHtml()}. You can also contact the French data protection authority, the CNIL (cnil.fr).</p>
+    <h3>Cookies</h3>
+    <p>No advertising cookies and no audience measurement. Only your login session is kept.</p>
+    <p class="stamp">Test version, updated on 9 October 2026. The French version prevails.</p>` },
+  cgu: { titre: 'Terms of use', html: () => `
+    <p>mykeros is a dream journal with a reading by artificial intelligence, in its test phase and free of charge.</p>
+    <h3>What mykeros is not</h3>
+    <p>It is neither a medical device nor a therapy. Readings are avenues for reflection, never a diagnosis or medical or psychological advice. They may contain errors. If you are in distress, contact a health professional or emergency services (in France: 3114 for suicide prevention, 15 or 112 in an emergency).</p>
+    <h3>Your account and your content</h3>
+    <p>The service is for people aged 15 or over. You keep ownership of your dream accounts; you only allow us to process them to provide the service. You can delete your account at any time.</p>
+    <h3>Availability</h3>
+    <p>The service is provided as is, with no guarantee of availability, and may change or stop during the test phase. A paid offer may be proposed later; its terms will be presented to you before any subscription.</p>
+    <h3>Governing law</h3>
+    <p>French law.</p>
+    <p class="stamp">Test version, updated on 7 October 2026. The French version prevails.</p>` },
+};
 function renderLegal() {
-  const doc = LEGAL[state.legalDoc] || LEGAL.confidentialite;
+  const doc = (LANG === 'en' ? LEGAL_EN : LEGAL)[state.legalDoc] || (LANG === 'en' ? LEGAL_EN : LEGAL).confidentialite;
   const loggedIn = !!state.session;
   h(`
     ${topNav(false, false)}
     <div class="view rest-view">
       <div class="auth-image"><img src="mykeros-figure-cutout.png" alt=""></div>
       <div class="journal-title display">${escapeHtml(doc.titre)}</div>
-      <div class="legal-body">${doc.html()}</div>
+      <div class="legal-body" data-noi18n>${doc.html()}</div>
       <div class="footer-actions"><button class="btn btn-ghost btn-block" id="legal-back">Retour</button></div>
     </div>
   `);
@@ -2033,7 +2302,7 @@ function render() {
 }
 
 // ---------- MISE À JOUR AUTOMATIQUE (app installée) ----------
-const APP_VERSION = '2026-10-26b';
+const APP_VERSION = '2026-10-29a';
 const SAFE_VIEWS = ['auth', 'journal', 'compte', 'synthese', 'legal', 'avant-ok', 'restitution'];
 async function checkUpdate() {
   if (location.protocol.indexOf('http') !== 0) return;
