@@ -313,6 +313,28 @@
   .piste-edit textarea { width: 100%; min-height: 96px; resize: vertical; border: 1px solid var(--line); border-radius: 10px; background: var(--card); color: var(--ink); padding: 10px 12px; font-family: 'Work Sans', sans-serif; font-size: 14px; line-height: 1.5; box-sizing: border-box; }
   .piste-edit .row { display: flex; gap: 8px; justify-content: flex-end; margin-top: 8px; }
   .piste-edit .btn { padding: 8px 14px; font-size: 13px; }
+  /* Synthèse courte (format v3, 05/11/2026) */
+  .rest-block .syn-these { font-family: 'GFS Neohellenic', serif; font-size: 17px; line-height: 1.5; margin: 0; color: var(--ink); }
+  .syn-bouge { margin: 0; padding-left: 18px; font-size: 14px; line-height: 1.55; }
+  .syn-bouge li { margin-bottom: 6px; }
+  .syn-item { border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; background: var(--card); }
+  .syn-item .t { font-family: 'GFS Neohellenic', serif; font-size: 16px; margin: 0 0 4px; color: var(--ink); }
+  .syn-item .p { font-size: 14px; line-height: 1.55; margin: 0; color: var(--ink); }
+  .syn-item .sub { font-size: 13px; color: var(--ink-soft); margin: 6px 0 0; line-height: 1.5; }
+  .syn-item .sub .k { color: var(--ink-faint); }
+  .syn-sol { font-family: 'IBM Plex Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-faint); margin-left: 6px; white-space: nowrap; }
+  .syn-badge { display: inline-block; font-family: 'Work Sans', sans-serif; font-size: 10.5px; padding: 1px 8px; border-radius: 10px; background: var(--accent-soft); color: var(--accent); margin-left: 6px; vertical-align: 2px; }
+  .syn-acts { display: flex; gap: 4px; justify-content: flex-end; margin-top: 6px; }
+  .syn-acts .link-btn { padding: 4px 6px; font-size: 12.5px; }
+  .syn-det { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--line); font-size: 13.5px; line-height: 1.55; color: var(--ink-soft); }
+  .syn-det .syn-refs { margin-left: 0; display: block; margin-top: 6px; }
+  .syn-dlg { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 10px; }
+  .syn-prop { background: var(--accent-soft); border-radius: 10px; padding: 10px 12px; font-size: 13px; line-height: 1.5; }
+  .syn-prop .row { display: flex; gap: 6px; justify-content: flex-end; margin-top: 6px; }
+  .syn-assoc { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; font-size: 14px; line-height: 1.5; }
+  .syn-assoc .lab { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--accent); margin-right: 6px; white-space: nowrap; }
+  .rest-block .syn-small { font-size: 12.5px; color: var(--ink-faint); line-height: 1.5; margin: 0; }
+  .rest-block .syn-small .k { color: var(--ink-soft); }
   .recit-txt { background: var(--card-2); border-radius: 12px; padding: 12px 14px; font-size: 14px; line-height: 1.6; white-space: pre-wrap; color: var(--ink); }
   .recit-txt .in { white-space: pre-wrap; }
   .recit-txt.clamp .in { display: -webkit-box; -webkit-line-clamp: 6; -webkit-box-orient: vertical; overflow: hidden; }
@@ -482,6 +504,21 @@ const I18N_EN = {
   'Synthèse': 'Synthesis', 'Raconter un nouveau rêve': 'Tell a new dream', "Ajouter un rêve d'avant mykeros": 'Add a dream from before mykeros',
   // Synthèse
   'Fil rouge': 'Common thread', 'Ce qui évolue': 'What is changing', 'Pistes à explorer': 'Paths to explore',
+  'En bref': 'In short', 'Ce qui a bougé': 'What has moved', 'Tensions': 'Tensions', 'Écarts et silences': 'Gaps and silences',
+  'Question ouverte': 'Open question', 'Rêves à associer': 'Dreams to associate', 'Figures': 'Figures',
+  'Vos associations sur ces rêves éclaireraient le plus la série.': 'Your associations on these dreams would shed the most light on the series.',
+  'Votre réponse nourrira la prochaine synthèse.': 'Your answer will feed the next synthesis.',
+  'Ce qui les réunit déjà :': 'What already brings them together:', 'Rien ne les réunit encore : la tension reste ouverte.': 'Nothing brings them together yet: the tension remains open.',
+  'Ce que vous avez déjà élaboré :': 'What you have already worked out:',
+  'Approfondir': 'Go deeper', 'Replier': 'Fold', 'Discuter': 'Discuss',
+  'forte': 'strong', 'moyenne': 'medium', 'à vérifier': 'to check', 'maintenu': 'upheld', 'nuancé': 'nuanced', 'corrigé': 'corrected',
+  'Écart': 'Gap', 'Silence': 'Silence', 'Angle mort': 'Blind spot',
+  'Ce qui sonne juste, ce qui sonne faux…': 'What rings true, what rings false…',
+  'Échange terminé · la prochaine synthèse en tiendra compte': 'Exchange closed · the next synthesis will take it into account',
+  "Kéros propose d'ajouter à votre référentiel personnel :": 'Kéros suggests adding to your personal reference:',
+  'Ajouter': 'Add', 'Non merci': 'No thanks', 'Ajouté à votre référentiel personnel.': 'Added to your personal reference.', 'Proposition écartée.': 'Suggestion dismissed.',
+  "Kéros n'est pas disponible pour l'instant. Réessayez dans un instant.": 'Kéros is not available right now. Please try again in a moment.',
+  "La synthèse croise l'ensemble de vos rêves : ce qui se dessine, les tensions qui vous travaillent, les écarts, et ce qui bouge d'une synthèse à l'autre. Chaque point peut se discuter avec Kéros.": 'The synthesis looks across all your dreams: what is taking shape, the tensions at work, the gaps, and what moves from one synthesis to the next. Each point can be discussed with Kéros.',
   'Vos réponses nourriront la prochaine synthèse.': 'Your answers will feed the next synthesis.', 'Répondre': 'Answer',
   'Ce que cette question éveille en vous…': 'What this question stirs in you…',
   "La synthèse croise l'ensemble de vos rêves : fil rouge, figures qui reviennent, motifs, évolution dans le temps.": 'The synthesis looks across all your dreams: common thread, recurring figures, motifs, change over time.',
@@ -1974,7 +2011,115 @@ const SYNTHESE_MIN = 5;
 function refsHtml(arr) {
   return (arr && arr.length) ? `<span class="syn-refs">${arr.map(n => /^\d+$/.test(String(n)) ? '#' + escapeHtml(n) : escapeHtml(n)).join(' · ')}</span>` : '';
 }
-function syntheseBodyHtml(c, synId, refl) {
+// Synthèse courte (format v3, 05/11/2026) : thèse, ce qui a bougé, tensions, écarts, question ouverte, rêves à associer, figures.
+// Chaque point se déplie (« Approfondir ») et se discute avec Kéros (« Discuter »).
+const SYN_STATUTS = { maintenu: 'maintenu', nuance: 'nuancé', corrige: 'corrigé' };
+function synSolHtml(s) { return s ? `<span class="syn-sol">${escapeHtml(s)}</span>` : ''; }
+function synBadgeHtml(st) { return st && SYN_STATUTS[st] ? `<span class="syn-badge">${SYN_STATUTS[st]}</span>` : ''; }
+function synItemHtml(el, titre, sol, corps, detail, refs, retours) {
+  return `<div class="syn-item" data-el="${el}">
+    <p class="t">${titre}${synSolHtml(sol)}${synBadgeHtml(retours && retours[el])}</p>
+    ${corps}
+    <div class="syn-det" hidden>${detail ? `<p class="p" style="color:inherit">${escapeHtml(detail)}</p>` : ''}${refsHtml(refs)}</div>
+    <div class="syn-acts"><button class="link-btn syn-more">Approfondir</button><button class="link-btn syn-talk">Discuter</button></div>
+  </div>`;
+}
+function syntheseV3Html(c, synId, refl, retours) {
+  const b = [];
+  b.push(`<div class="rest-block"><h3>En bref</h3><p class="syn-these">${escapeHtml(c.these)}</p></div>`);
+  if ((c.ce_qui_a_bouge || []).length) b.push(`<div class="rest-block"><h3>Ce qui a bougé</h3><ul class="syn-bouge">${c.ce_qui_a_bouge.map(x => `<li>${escapeHtml(x)}</li>`).join('')}</ul></div>`);
+  if ((c.tensions || []).length) b.push(`<div class="rest-block"><h3>Tensions</h3>${c.tensions.map((t, i) => synItemHtml(`tension:${i}`,
+    `${escapeHtml(t.pole_a)} ↔ ${escapeHtml(t.pole_b)}`, t.solidite,
+    `<p class="p">${escapeHtml(t.enjeu || '')}</p>` + (t.reunion
+      ? `<p class="sub"><span class="k">Ce qui les réunit déjà :</span> ${escapeHtml(t.reunion)}</p>`
+      : `<p class="sub"><span class="k">Rien ne les réunit encore : la tension reste ouverte.</span></p>`),
+    t.detail, [...(t.reves || []), ...(t.reves_reunion || []).filter(x => !(t.reves || []).includes(x))], retours)).join('')}</div>`);
+  if ((c.ecarts || []).length) b.push(`<div class="rest-block"><h3>Écarts et silences</h3>${c.ecarts.map((e, i) => synItemHtml(`ecart:${i}`,
+    escapeHtml((e.type || 'écart').replace(/^./, m => m.toUpperCase())), e.solidite,
+    `<p class="p">${escapeHtml(e.phrase || '')}</p>`, e.detail, e.reves, retours)).join('')}</div>`);
+  const q = c.question_ouverte && c.question_ouverte.question;
+  if (q) b.push(`<div class="rest-block" id="syn-pistes"><h3>Question ouverte</h3>
+    ${c.question_ouverte.appui ? `<p class="syn-small" style="margin-bottom:8px">${escapeHtml(c.question_ouverte.appui)}</p>` : ''}
+    ${synId ? `<p class="piste-hint">Votre réponse nourrira la prochaine synthèse.</p>` : ''}
+    <ul class="syn-list ${synId ? 'piste-list' : ''}">${synId ? pisteHtml(q, 0, refl && refl[q]) : `<li>${escapeHtml(q)}</li>`}</ul></div>`);
+  if ((c.reves_a_associer || []).length) b.push(`<div class="rest-block"><h3>Rêves à associer</h3>
+    <p class="syn-small" style="margin-bottom:8px">Vos associations sur ces rêves éclaireraient le plus la série.</p>
+    <ul class="syn-assoc">${c.reves_a_associer.map(x => `<li><span class="lab">${escapeHtml(x.reve)}</span>${escapeHtml(x.question || '')}</li>`).join('')}</ul></div>`);
+  if ((c.figures || []).length) b.push(`<div class="rest-block"><h3>Figures</h3>${c.figures.map((f, i) => synItemHtml(`figure:${i}`,
+    escapeHtml(f.figure), '', `<p class="p">${escapeHtml(f.phrase || f.lecture || '')}</p>`, '', f.reves, retours)).join('')}</div>`);
+  if (c.deja_elabore) b.push(`<div class="rest-block"><p class="syn-small"><span class="k">Ce que vous avez déjà élaboré :</span> ${escapeHtml(c.deja_elabore)}</p></div>`);
+  return fixGlyph(b.join(''));
+}
+function synPistes(c) { return c && c.these ? (c.question_ouverte && c.question_ouverte.question ? [c.question_ouverte.question] : []) : (c.pistes || []); }
+// Approfondir / Discuter sur chaque point de la synthèse courte
+function bindSynV3(syn, retours) {
+  document.querySelectorAll('#syn-body .syn-item[data-el]').forEach(item => {
+    const el = item.dataset.el;
+    const det = item.querySelector('.syn-det');
+    const more = item.querySelector('.syn-more');
+    const hasDet = det && det.textContent.trim();
+    if (!hasDet) more.remove();
+    else more.onclick = () => { det.hidden = !det.hidden; more.textContent = det.hidden ? 'Approfondir' : 'Replier'; };
+    const talk = item.querySelector('.syn-talk');
+    talk.onclick = () => {
+      talk.remove();
+      const box = document.createElement('div');
+      box.className = 'syn-dlg';
+      item.appendChild(box);
+      bindSynDialogue(syn, el, box, item, retours);
+    };
+  });
+}
+function bindSynDialogue(syn, el, box, item, retours) {
+  const bubble = m => m.role === 'figure'
+    ? `<div class="fig-row">${FIG_AV}<div class="fig-bub">${escapeHtml(m.texte)}</div></div>`
+    : `<div class="me-row"><div class="me-bub">${escapeHtml(m.texte)}</div></div>`;
+  const typing = `<div class="fig-row">${FIG_AV}<div class="fig-bub fig-typing"><span></span><span></span><span></span></div></div>`;
+  const setBadge = (r) => {
+    if (!r || !r.statut) return;
+    retours[el] = r.statut;
+    const t = item.querySelector('.t');
+    const old = t.querySelector('.syn-badge'); if (old) old.remove();
+    t.insertAdjacentHTML('beforeend', synBadgeHtml(r.statut));
+  };
+  const propHtml = (p) => p ? `<div class="syn-prop" data-pid="${p.id}"><div>Kéros propose d'ajouter à votre référentiel personnel : <strong>${escapeHtml(p.nom)}</strong> — ${escapeHtml(p.description || '')}</div>
+    <div class="row"><button class="link-btn syn-prop-non">Non merci</button><button class="link-btn syn-prop-oui">Ajouter</button></div></div>` : '';
+  const draw = (d, pending, prop) => {
+    const msgs = (d && d.messages) || [];
+    const open = d && d.tours < d.max_tours && msgs.length && msgs[msgs.length - 1].role === 'figure';
+    box.innerHTML = fixGlyph(msgs.map(bubble).join('')) + (pending ? bubble({ role: 'reveur', texte: pending }) + typing : '')
+      + (prop && !pending ? propHtml(prop) : '')
+      + (open && !pending ? `<div class="fig-input"><textarea rows="2" maxlength="4000" placeholder="Ce qui sonne juste, ce qui sonne faux…"></textarea><button aria-label="Envoyer">${FIG_SEND}</button></div>` : '')
+      + (d && !open && !pending && msgs.length > 1 ? `<div class="fig-note">Échange terminé · la prochaine synthèse en tiendra compte</div>` : '');
+    if (d && d.retour) setBadge(d.retour);
+    const pb = box.querySelector('.syn-prop');
+    if (pb) {
+      const decide = async (statut) => {
+        const { error } = await sb.from('referentiel_perso').update({ statut, updated_at: new Date().toISOString() }).eq('id', pb.dataset.pid);
+        pb.innerHTML = error ? 'Impossible d\'enregistrer ce choix.' : (statut === 'valide' ? 'Ajouté à votre référentiel personnel.' : 'Proposition écartée.');
+      };
+      pb.querySelector('.syn-prop-oui').onclick = () => decide('valide');
+      pb.querySelector('.syn-prop-non').onclick = () => decide('refuse');
+    }
+    const send = box.querySelector('.fig-input button');
+    if (send) send.onclick = async () => {
+      const ta = box.querySelector('.fig-input textarea');
+      const t = ta.value.trim();
+      if (!t) return;
+      draw(d, t);
+      const { data, error } = await sb.functions.invoke('dialogue-synthese', { body: { synthese_id: syn.id, element: el, reponse: t } });
+      if (error || !data || !data.messages) { draw(d); box.insertAdjacentHTML('beforeend', '<div class="fig-note">La réponse n\'a pas pu être envoyée. Réessayez dans un instant.</div>'); const ta2 = box.querySelector('.fig-input textarea'); if (ta2) ta2.value = t; return; }
+      draw(data, null, data.proposition);
+    };
+  };
+  box.innerHTML = typing;
+  sb.functions.invoke('dialogue-synthese', { body: { synthese_id: syn.id, element: el } }).then(({ data, error }) => {
+    if (error || !data || !data.messages) { box.innerHTML = '<div class="fig-note">Kéros n\'est pas disponible pour l\'instant. Réessayez dans un instant.</div>'; return; }
+    draw(data);
+  });
+}
+function syntheseBodyHtml(c, synId, refl, retours) {
+  if (c && c.these) return syntheseV3Html(c, synId, refl, retours || {});
   const blocks = [];
   blocks.push(`<div class="rest-block"><h3>Fil rouge</h3><p>${escapeHtml(c.apercu)}</p></div>`);
   (c.figures || []).forEach(f => blocks.push(`<div class="rest-block"><h3>${escapeHtml(f.figure)}${refsHtml(f.reves)}</h3><p>${escapeHtml(f.lecture)}</p></div>`));
@@ -1997,7 +2142,7 @@ function pisteHtml(p, i, rep) {
 function bindPistes(syn, refl, redraw) {
   const box = document.getElementById('syn-pistes');
   if (!box) return;
-  const pistes = syn.contenu.pistes || [];
+  const pistes = synPistes(syn.contenu);
   box.querySelectorAll('li[data-i]').forEach(li => {
     const p = pistes[Number(li.dataset.i)];
     const open = li.querySelector('.piste-open');
@@ -2043,7 +2188,7 @@ async function renderSynthese() {
 
   if (!isPremium) {
     body.innerHTML = `
-      <div class="rest-block"><p>La synthèse croise l'ensemble de vos rêves : fil rouge, figures qui reviennent, motifs, évolution dans le temps.</p></div>
+      <div class="rest-block"><p>La synthèse croise l'ensemble de vos rêves : ce qui se dessine, les tensions qui vous travaillent, les écarts, et ce qui bouge d'une synthèse à l'autre. Chaque point peut se discuter avec Kéros.</p></div>
       <div class="premium-cta">
         <span class="txt">Disponible avec Premium, à partir de ${SYNTHESE_MIN} rêves.</span>
         <button class="btn btn-primary" id="syn-premium">Bientôt</button>
@@ -2063,11 +2208,16 @@ async function renderSynthese() {
   const SYN_DELAI = 8 * 60 * 1000;
   let enCours = (last || []).find(x => x.statut === 'en_cours' && Date.now() - new Date(x.created_at).getTime() < SYN_DELAI && (!current || new Date(x.created_at) > new Date(current.created_at)));
   let refl = {};
+  let retours = {};
   const loadRefl = async (syn) => {
-    refl = {};
+    refl = {}; retours = {};
     if (!syn) return;
-    const { data } = await sb.from('reflexions').select('piste, reponse').eq('synthese_id', syn.id);
+    const [{ data }, { data: ret }] = await Promise.all([
+      sb.from('reflexions').select('piste, reponse').eq('synthese_id', syn.id),
+      syn.contenu && syn.contenu.these ? sb.from('syntheses_retours').select('element, statut').eq('synthese_id', syn.id) : Promise.resolve({ data: [] }),
+    ]);
     (data || []).forEach(x => { refl[x.piste] = x.reponse; });
+    (ret || []).forEach(x => { retours[x.element] = x.statut; });
   };
   await loadRefl(current);
 
@@ -2076,7 +2226,7 @@ async function renderSynthese() {
     body.innerHTML = `
       <div id="syn-msg"></div>
       ${enCours ? `<div class="loading-block" style="padding:18px 0 22px"><div class="spinner"></div><div>Synthèse en cours…</div></div>` : ''}
-      ${syn ? `<p class="syn-meta">Générée le ${fmtDate(syn.created_at)} · ${syn.nb_reves} rêves</p>${syntheseBodyHtml(syn.contenu, syn.id, refl)}` : ''}
+      ${syn ? `<p class="syn-meta">Générée le ${fmtDate(syn.created_at)} · ${syn.nb_reves} rêves</p>${syntheseBodyHtml(syn.contenu, syn.id, refl, retours)}` : ''}
       ${enCours ? '' : !enough ? `<div class="journal-empty" style="margin-top:20px">Il faut au moins ${SYNTHESE_MIN} rêves pour une synthèse. Vous en avez ${nb}.</div>` : `
         <div class="footer-actions"><button class="btn ${syn ? 'btn-ghost' : 'btn-primary'} btn-block" id="syn-go">${syn ? 'Actualiser la synthèse' : 'Générer la synthèse'}</button></div>`}
       ${syn ? `<div class="to-top-wrap"><button class="to-top" id="syn-top" aria-label="Revenir en haut"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 15 12 9 18 15"/></svg></button></div>` : ''}
@@ -2092,7 +2242,7 @@ async function renderSynthese() {
       }
       window.scrollTo({ top: 0, behavior: 'smooth' });
     };
-    if (syn) bindPistes(syn, refl, () => draw(syn));
+    if (syn) { bindPistes(syn, refl, () => draw(syn)); if (syn.contenu && syn.contenu.these) bindSynV3(syn, retours); }
     const go = $('#syn-go');
     if (go) go.onclick = async () => {
       go.disabled = true; go.textContent = 'Lancement…';
@@ -2118,7 +2268,7 @@ async function renderSynthese() {
       if (state.view !== 'synthese' || !enCours || !document.body.contains(body)) return;
       const { data: row } = await sb.from('syntheses').select('id, created_at, nb_reves, contenu, statut').eq('id', enCours.id).maybeSingle();
       if (state.view !== 'synthese' || !document.body.contains(body)) return;
-      if (row && row.statut === 'ok' && row.contenu) { enCours = null; refl = {}; state.lastSyn = { created_at: row.created_at, nb_reves: row.nb_reves }; draw(row); return; }
+      if (row && row.statut === 'ok' && row.contenu) { enCours = null; refl = {}; retours = {}; state.lastSyn = { created_at: row.created_at, nb_reves: row.nb_reves }; draw(row); return; }
       if (!row || row.statut === 'erreur' || Date.now() - new Date(enCours.created_at).getTime() > SYN_DELAI) {
         enCours = null; draw(prev);
         $('#syn-msg').innerHTML = `<div class="msg error" style="margin-bottom:12px">La synthèse n'a pas pu être générée. Réessayez dans un instant.</div>`;
@@ -2302,7 +2452,7 @@ function render() {
 }
 
 // ---------- MISE À JOUR AUTOMATIQUE (app installée) ----------
-const APP_VERSION = '2026-10-29a';
+const APP_VERSION = '2026-11-05a';
 const SAFE_VIEWS = ['auth', 'journal', 'compte', 'synthese', 'legal', 'avant-ok', 'restitution'];
 async function checkUpdate() {
   if (location.protocol.indexOf('http') !== 0) return;
