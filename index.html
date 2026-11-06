@@ -345,6 +345,22 @@
   .danger-link { background: none; border: none; color: var(--danger); font-size: 12.5px; cursor: pointer; font-family: 'Work Sans', sans-serif; text-decoration: underline; padding: 6px; }
   .account-section { margin-top: 18px; display: flex; flex-direction: column; gap: 10px; text-align: left; }
   .account-section .row { display: flex; flex-direction: column; gap: 6px; }
+  /* Mon référentiel (06/11/2026) */
+  .ref-intro { font-size: 13.5px; line-height: 1.55; color: var(--ink-soft); margin: 4px 0 14px; text-align: left; }
+  .ref-group { margin-top: 18px; text-align: left; }
+  .ref-group h3 { font-family: 'IBM Plex Mono', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--accent); margin: 0 0 8px; font-weight: 600; }
+  .ref-card { border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; margin-bottom: 8px; background: var(--card); }
+  .ref-card.prop { background: var(--accent-soft); border-color: transparent; }
+  .ref-card .n { font-family: 'GFS Neohellenic', serif; font-size: 16px; color: var(--ink); margin: 0; }
+  .ref-card .al { font-size: 12px; color: var(--ink-faint); margin: 2px 0 0; }
+  .ref-card .d { font-size: 13.5px; line-height: 1.55; color: var(--ink); margin: 6px 0 0; }
+  .ref-card .rv { font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; color: var(--ink-faint); margin: 6px 0 0; }
+  .ref-card .acts { display: flex; gap: 4px; justify-content: flex-end; margin-top: 6px; }
+  .ref-card .acts .link-btn { padding: 4px 6px; font-size: 12.5px; }
+  .ref-card .acts .danger-link { text-decoration: none; padding: 4px 6px; }
+  .ref-form { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+  .ref-form textarea { min-height: 84px; }
+  .ref-form .row2 { display: flex; gap: 8px; justify-content: flex-end; }
   .jo-toggle { display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--card); cursor: pointer; }
   .jo-toggle input { margin-top: 3px; accent-color: var(--accent); width: 18px; height: 18px; flex-shrink: 0; }
   .jo-toggle .t { font-size: 14px; font-weight: 600; color: var(--ink); }
@@ -529,6 +545,15 @@ const I18N_EN = {
   // Compte
   'Langue': 'Language', 'Mode journal seul': 'Journal-only mode',
   'Pour celles et ceux qui sont en analyse : vous consignez vos rêves, mots-clés et associations, sans lecture, sans dialogue avec Kéros ni synthèse. Vous apportez votre matériau en séance, sans interprétation toute faite. Vos lectures déjà faites sont conservées et réapparaissent si vous désactivez ce mode.': 'For people in analysis: you record your dreams, keywords and associations, with no reading, no dialogue with Kéros and no synthesis. You bring your material to your sessions without a ready-made interpretation. Readings already made are kept and come back if you turn this mode off.',
+  'Mon référentiel personnel': 'My personal reference', 'Mon référentiel': 'My reference',
+  "Les figures, personnes, lieux, symboles et corrections propres à vos rêves. Kéros s'en sert dans vos lectures, vos synthèses et vos dialogues, et ils priment sur ses repères généraux. Ce référentiel n'est visible que de vous.": 'The figures, people, places, symbols and corrections specific to your dreams. Kéros uses them in your readings, syntheses and dialogues, and they take precedence over its general references. Only you can see this reference.',
+  'Ajouter une entrée': 'Add an entry', 'Retour à Mon compte': 'Back to My account', 'Chargement…': 'Loading…',
+  'Propositions de Kéros': "Kéros's suggestions", 'Personnes': 'People', 'Lieux': 'Places', 'Symboles': 'Symbols', 'Corrections': 'Corrections',
+  'Nom': 'Name', 'Autres noms (séparés par des virgules)': 'Other names (comma-separated)', 'Ce que cela représente pour vous': 'What it means to you',
+  'Supprimer': 'Delete',
+  'Ajouté à votre référentiel.': 'Added to your reference.', 'Entrée supprimée.': 'Entry removed.', 'Entrée enregistrée.': 'Entry saved.', 'Entrée ajoutée.': 'Entry added.',
+  'Le nom et la description sont nécessaires.': 'A name and a description are needed.',
+  "Votre référentiel est encore vide. Il se remplit au fil de vos rêves : quand vous nommez une figure ou un symbole dans un dialogue, Kéros vous propose de l'ajouter. Vous pouvez aussi ajouter une entrée vous-même.": 'Your reference is still empty. It fills up as you go: when you name a figure or a symbol in a dialogue, Kéros suggests adding it. You can also add an entry yourself.',
   'Exporter mes données': 'Export my data', 'Supprimer mon compte': 'Delete my account', 'Genre enregistré.': 'Gender saved.',
   'Mode journal seul activé.': 'Journal-only mode on.', 'Lectures, Kéros et synthèse réactivés.': 'Readings, Kéros and synthesis back on.',
   'Langue enregistrée.': 'Language saved.',
@@ -705,7 +730,7 @@ function signalerOuverture() {
   ouvertureSignaleeLe = Date.now();
   sb.rpc('signaler_ouverture', { p_version: APP_VERSION }).then(() => {}, () => {});
 }
-const PAGES_REPRISES = ['journal', 'restitution', 'restituting', 'restitution-error', 'synthese', 'compte'];
+const PAGES_REPRISES = ['journal', 'restitution', 'restituting', 'restitution-error', 'synthese', 'compte', 'referentiel'];
 function memoriserPage() {
   try {
     if (!state.session) return;
@@ -717,7 +742,7 @@ async function reprendreDernierePage() {
   let p = null;
   try { p = JSON.parse(localStorage.getItem(DERNIERE_PAGE) || 'null'); } catch (e) {}
   if (!p || !PAGES_REPRISES.includes(p.v) || Date.now() - (p.t || 0) > INACTIF_SAISIE) return false;
-  if (p.v === 'synthese' || p.v === 'compte') { state.view = p.v; render(); return true; }
+  if (p.v === 'synthese' || p.v === 'compte' || p.v === 'referentiel') { state.view = p.v; render(); return true; }
   await goJournal();
   if (p.v === 'journal' || !p.id) return true;
   const reve = (state.journal || []).find(r => r.id === p.id);
@@ -2301,6 +2326,7 @@ function renderCompte() {
           <select id="acc-lang" data-noi18n><option value="fr"${LANG === 'fr' ? ' selected' : ''}>Français</option><option value="en"${LANG === 'en' ? ' selected' : ''}>English</option></select>
         </div>
         <label class="jo-toggle"><input type="checkbox" id="acc-jo"${u.user_metadata?.journal_seul ? ' checked' : ''}><span><div class="t">Mode journal seul</div><div class="d">Pour celles et ceux qui sont en analyse : vous consignez vos rêves, mots-clés et associations, sans lecture, sans dialogue avec Kéros ni synthèse. Vous apportez votre matériau en séance, sans interprétation toute faite. Vos lectures déjà faites sont conservées et réapparaissent si vous désactivez ce mode.</div></span></label>
+        <button class="btn btn-ghost btn-block" id="acc-ref">Mon référentiel personnel</button>
         <button class="btn btn-ghost btn-block" id="acc-export">Exporter mes données</button>
         <div style="text-align:center"><button class="danger-link" id="acc-delete">Supprimer mon compte</button></div>
       </div>
@@ -2328,6 +2354,7 @@ function renderCompte() {
     if (state.session && state.session.user) state.session.user.user_metadata = { ...(state.session.user.user_metadata || {}), journal_seul: on };
     msg('ok', on ? 'Mode journal seul activé.' : 'Lectures, Kéros et synthèse réactivés.');
   };
+  $('#acc-ref').onclick = () => { state.view = 'referentiel'; render(); };
   $('#acc-export').onclick = async () => {
     const { data, error } = await sb.from('reves').select('*, mots_cles(*, associations(*))').eq('user_id', u.id).order('numero');
     if (error) return msg('error', error.message);
@@ -2422,8 +2449,115 @@ function renderLegal() {
   $('#legal-back').onclick = () => { state.view = state.legalBack || (loggedIn ? 'journal' : 'auth'); render(); };
 }
 
+// ---------- MON RÉFÉRENTIEL (06/11/2026) ----------
+// Figures, personnes, lieux, symboles et corrections propres au rêveur (table referentiel_perso, visible de lui seul).
+// Lu par les lectures, les synthèses et les dialogues de Kéros ; les propositions de Kéros attendent sa validation.
+const REF_TYPES = [['figure', 'Figures'], ['personne', 'Personnes'], ['lieu', 'Lieux'], ['symbole', 'Symboles'], ['correction', 'Corrections']];
+async function renderReferentiel() {
+  h(`
+    ${topNav(true)}
+    <div class="view rest-view">
+      <div class="journal-title display">Mon référentiel</div>
+      <p class="ref-intro">Les figures, personnes, lieux, symboles et corrections propres à vos rêves. Kéros s'en sert dans vos lectures, vos synthèses et vos dialogues, et ils priment sur ses repères généraux. Ce référentiel n'est visible que de vous.</p>
+      <div id="ref-msg"></div>
+      <button class="btn btn-ghost btn-block" id="ref-add">Ajouter une entrée</button>
+      <div id="ref-new"></div>
+      <div id="ref-list"><p class="ref-intro">Chargement…</p></div>
+      <div style="text-align:center;margin-top:18px"><button class="link-btn" id="ref-back">Retour à Mon compte</button></div>
+      ${legalLinksHtml()}
+    </div>
+  `);
+  bindTopNav();
+  bindLegalLinks('referentiel');
+  $('#ref-back').onclick = () => { state.view = 'compte'; render(); };
+  const msg = (cls, t) => { $('#ref-msg').innerHTML = t ? `<div class="msg ${cls}" style="margin-bottom:8px">${escapeHtml(t)}</div>` : ''; };
+  const uid = state.session && state.session.user && state.session.user.id;
+  let rows = [];
+  const charger = async () => {
+    const { data, error } = await sb.from('referentiel_perso').select('id, type, nom, aliases, description, reves, statut, source')
+      .eq('user_id', uid).in('statut', ['valide', 'propose']).order('nom');
+    if (error) { $('#ref-list').innerHTML = ''; return msg('error', error.message); }
+    rows = data || [];
+    dessiner();
+  };
+  const formHtml = (r) => `<div class="ref-form field">
+      ${r ? '' : `<select class="rf-type">${REF_TYPES.map(([v, t]) => `<option value="${v}">${t}</option>`).join('')}</select>`}
+      <input class="rf-nom" maxlength="120" placeholder="Nom" value="${r ? escapeHtml(r.nom) : ''}">
+      <input class="rf-al" maxlength="300" placeholder="Autres noms (séparés par des virgules)" value="${r ? escapeHtml((r.aliases || []).join(', ')) : ''}">
+      <textarea class="rf-desc" maxlength="1000" placeholder="Ce que cela représente pour vous">${r ? escapeHtml(r.description) : ''}</textarea>
+      <div class="row2"><button class="link-btn rf-cancel">Annuler</button><button class="btn btn-primary rf-save" style="padding:8px 16px;font-size:13px">Enregistrer</button></div>
+    </div>`;
+  const lireForm = (box) => ({
+    nom: box.querySelector('.rf-nom').value.trim(),
+    aliases: box.querySelector('.rf-al').value.split(',').map(x => x.trim()).filter(Boolean),
+    description: box.querySelector('.rf-desc').value.trim(),
+  });
+  const carteHtml = (r) => `<div class="ref-card${r.statut === 'propose' ? ' prop' : ''}" data-id="${r.id}">
+      <p class="n">${escapeHtml(r.nom)}</p>
+      ${(r.aliases || []).length ? `<p class="al">${escapeHtml(r.aliases.join(' · '))}</p>` : ''}
+      <p class="d">${escapeHtml(r.description)}</p>
+      ${(r.reves || []).length ? `<p class="rv">${escapeHtml(r.reves.join(' · '))}</p>` : ''}
+      <div class="acts">${r.statut === 'propose'
+        ? `<button class="link-btn rf-non">Non merci</button><button class="link-btn rf-oui">Ajouter</button>`
+        : `<button class="danger-link rf-del">Supprimer</button><button class="link-btn rf-edit">Modifier</button>`}</div>
+    </div>`;
+  const dessiner = () => {
+    const props = rows.filter(r => r.statut === 'propose');
+    const val = rows.filter(r => r.statut === 'valide');
+    let html = '';
+    if (props.length) html += `<div class="ref-group"><h3>Propositions de Kéros</h3>${props.map(carteHtml).join('')}</div>`;
+    REF_TYPES.forEach(([v, t]) => {
+      const g = val.filter(r => r.type === v);
+      if (g.length) html += `<div class="ref-group"><h3>${t} · ${g.length}</h3>${g.map(carteHtml).join('')}</div>`;
+    });
+    if (!props.length && !val.length) html = `<p class="ref-intro" style="margin-top:14px">Votre référentiel est encore vide. Il se remplit au fil de vos rêves : quand vous nommez une figure ou un symbole dans un dialogue, Kéros vous propose de l'ajouter. Vous pouvez aussi ajouter une entrée vous-même.</p>`;
+    $('#ref-list').innerHTML = fixGlyph(html);
+    document.querySelectorAll('#ref-list .ref-card').forEach(card => {
+      const r = rows.find(x => x.id === card.dataset.id);
+      const maj = async (champs, ok) => {
+        const { error } = await sb.from('referentiel_perso').update({ ...champs, updated_at: new Date().toISOString() }).eq('id', r.id);
+        if (error) return msg('error', error.message);
+        Object.assign(r, champs); msg('ok', ok); dessiner();
+      };
+      const oui = card.querySelector('.rf-oui'); if (oui) oui.onclick = () => maj({ statut: 'valide' }, 'Ajouté à votre référentiel.');
+      const non = card.querySelector('.rf-non'); if (non) non.onclick = async () => { await maj({ statut: 'refuse' }, 'Proposition écartée.'); rows = rows.filter(x => x.id !== r.id); dessiner(); };
+      const del = card.querySelector('.rf-del'); if (del) del.onclick = async () => {
+        if (!confirm(L(`Supprimer « ${r.nom} » de votre référentiel ?`, `Remove “${r.nom}” from your reference?`))) return;
+        const { error } = await sb.from('referentiel_perso').delete().eq('id', r.id);
+        if (error) return msg('error', error.message);
+        rows = rows.filter(x => x.id !== r.id); msg('ok', 'Entrée supprimée.'); dessiner();
+      };
+      const ed = card.querySelector('.rf-edit'); if (ed) ed.onclick = () => {
+        card.querySelector('.acts').remove();
+        card.insertAdjacentHTML('beforeend', formHtml(r));
+        card.querySelector('.rf-cancel').onclick = () => dessiner();
+        card.querySelector('.rf-save').onclick = () => {
+          const f = lireForm(card);
+          if (!f.nom || !f.description) return msg('error', 'Le nom et la description sont nécessaires.');
+          maj(f, 'Entrée enregistrée.');
+        };
+      };
+    });
+  };
+  $('#ref-add').onclick = () => {
+    const box = $('#ref-new');
+    if (box.innerHTML) { box.innerHTML = ''; return; }
+    box.innerHTML = `<div class="ref-card">${formHtml(null)}</div>`;
+    box.querySelector('.rf-cancel').onclick = () => { box.innerHTML = ''; };
+    box.querySelector('.rf-save').onclick = async () => {
+      const f = lireForm(box);
+      if (!f.nom || !f.description) return msg('error', 'Le nom et la description sont nécessaires.');
+      const { data, error } = await sb.from('referentiel_perso').insert({ user_id: uid, type: box.querySelector('.rf-type').value, ...f, statut: 'valide', source: 'reveur' })
+        .select('id, type, nom, aliases, description, reves, statut, source').single();
+      if (error) return msg('error', error.message);
+      rows.push(data); box.innerHTML = ''; msg('ok', 'Entrée ajoutée.'); dessiner();
+    };
+  };
+  charger();
+}
+
 // ---------- RENDER DISPATCH ----------
-const GLYPH_HOME_VIEWS = ['journal', 'compte', 'synthese', 'restitution', 'avant-ok', 'legal'];
+const GLYPH_HOME_VIEWS = ['journal', 'compte', 'referentiel', 'synthese', 'restitution', 'avant-ok', 'legal'];
 function render() {
   memoriserPage();
   const fg = document.getElementById('footer-glyph');
@@ -2432,6 +2566,7 @@ function render() {
     case 'auth': return renderAuth();
     case 'reset': return renderReset();
     case 'compte': return renderCompte();
+    case 'referentiel': return renderReferentiel();
     case 'synthese': return renderSynthese();
     case 'legal': return renderLegal();
     case 'recueil': return renderRecueil();
@@ -2452,7 +2587,7 @@ function render() {
 }
 
 // ---------- MISE À JOUR AUTOMATIQUE (app installée) ----------
-const APP_VERSION = '2026-11-05a';
+const APP_VERSION = '2026-11-06a';
 const SAFE_VIEWS = ['auth', 'journal', 'compte', 'synthese', 'legal', 'avant-ok', 'restitution'];
 async function checkUpdate() {
   if (location.protocol.indexOf('http') !== 0) return;
