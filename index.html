@@ -93,6 +93,9 @@
 
   /* Auth */
   .auth-view { position: relative; justify-content: flex-start; align-items: center; text-align: center; padding-top: 57px; padding-bottom: 46px; }
+  .tf-link { display: block; max-width: 320px; margin: 18px auto 0; padding: 12px 14px; border: 1px solid var(--accent); border-radius: 12px; text-decoration: none; text-align: center; background: var(--card); }
+  .tf-link .tf-t { display: block; color: var(--accent); font-weight: 600; }
+  .tf-link .tf-d { display: block; color: var(--ink-soft); font-size: 13px; margin-top: 2px; }
   .auth-box { width: 100%; max-width: 320px; margin: 0 auto; display: flex; flex-direction: column; gap: 0; }
   .auth-box h1 { font-size: 26px; }
   .auth-image { width: 108px; margin: 0 auto; }
@@ -802,6 +805,7 @@ function renderAuth() {
         ${mode === 'signin' ? `<button class="link-btn" id="auth-forgot" style="margin-top:2px">Mot de passe oublié ?</button>` : ''}
         <div class="lang-switch" data-noi18n><button data-lang="fr"${LANG === 'fr' ? ' class="on"' : ''}>FR</button><span>·</span><button data-lang="en"${LANG === 'en' ? ' class="on"' : ''}>EN</button></div>
       </div>
+      ${testflightHtml()}
       ${legalLinksHtml()}
     </div>
   `);
@@ -844,6 +848,12 @@ function renderAuth() {
       btn.disabled = false;
     }
   };
+}
+
+// Lien vers l'app iPhone (TestFlight), affiché sur la connexion et dans Mon compte
+const TESTFLIGHT_URL = 'https://testflight.apple.com/join/Z1S4ZWfz';
+function testflightHtml() {
+  return `<a class="tf-link" href="${TESTFLIGHT_URL}" target="_blank" rel="noopener"><span class="tf-t">${L("Tester l'app iPhone", 'Try the iPhone app')}</span><span class="tf-d">${L('Plus rapide, avec la dictée. Installation via TestFlight, avec votre compte habituel.', 'Faster, with dictation. Installed through TestFlight, with your usual account.')}</span></a>`;
 }
 
 function renderReset() {
@@ -2330,6 +2340,7 @@ function renderCompte() {
         <button class="btn btn-ghost btn-block" id="acc-export">Exporter mes données</button>
         <div style="text-align:center"><button class="danger-link" id="acc-delete">Supprimer mon compte</button></div>
       </div>
+      ${testflightHtml()}
       ${legalLinksHtml()}
     </div>
   `);
@@ -2587,7 +2598,7 @@ function render() {
 }
 
 // ---------- MISE À JOUR AUTOMATIQUE (app installée) ----------
-const APP_VERSION = '2026-11-06a';
+const APP_VERSION = '2026-11-07a';
 const SAFE_VIEWS = ['auth', 'journal', 'compte', 'synthese', 'legal', 'avant-ok', 'restitution'];
 async function checkUpdate() {
   if (location.protocol.indexOf('http') !== 0) return;
