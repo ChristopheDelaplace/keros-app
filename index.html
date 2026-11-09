@@ -836,14 +836,16 @@ function renderAuth() {
         const { error } = await sb.auth.signUp({ email, password, options: { data: { prenom, genre, langue: LANG, consent_at: new Date().toISOString(), consent_version: CONSENT_VERSION } } });
         if (error) throw error;
         state.authDraft = {};
-        msgEl.innerHTML = `<div class="msg ok">Compte créé. Si la confirmation par email est activée, vérifiez votre boîte avant de vous connecter.</div>`;
+        msgEl.innerHTML = `<div class="msg ok">${L('Compte créé. Cliquez sur le lien reçu par e-mail pour le confirmer, puis connectez-vous. Pensez à regarder dans les spams.', 'Account created. Click the link in the email we sent you to confirm it, then log in. Check your spam folder too.')}</div>`;
         state.authMode = 'signin';
       } else {
         const { error } = await sb.auth.signInWithPassword({ email, password });
         if (error) throw error;
       }
     } catch (err) {
-      msgEl.innerHTML = `<div class="msg error">${escapeHtml(err.message || String(err))}</div>`;
+      const em = err.message || String(err);
+      const emTxt = /Email not confirmed/i.test(em) ? L("Adresse e-mail pas encore confirmée : cliquez sur le lien reçu par e-mail (pensez aux spams).", 'Email not confirmed yet: click the link in the email we sent you (check your spam folder).') : em;
+      msgEl.innerHTML = `<div class="msg error">${escapeHtml(emTxt)}</div>`;
     } finally {
       btn.disabled = false;
     }
@@ -2598,7 +2600,7 @@ function render() {
 }
 
 // ---------- MISE À JOUR AUTOMATIQUE (app installée) ----------
-const APP_VERSION = '2026-11-07a';
+const APP_VERSION = '2026-11-09a';
 const SAFE_VIEWS = ['auth', 'journal', 'compte', 'synthese', 'legal', 'avant-ok', 'restitution'];
 async function checkUpdate() {
   if (location.protocol.indexOf('http') !== 0) return;
