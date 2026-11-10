@@ -1504,7 +1504,12 @@ function renderContexte() {
     const btn = $('#contexte-next');
     btn.disabled = true; btn.textContent = 'On y réfléchit…';
     const contexte = $('#contexte-input').value.trim();
-    await sb.from('reves').update({ contexte }).eq('id', state.reve.id);
+    const { error } = await sb.from('reves').update({ contexte }).eq('id', state.reve.id);
+    if (error) {
+      alert("Le contexte n'a pas pu être enregistré : " + (error.message || error) + '\nVérifiez la connexion et réessayez.');
+      btn.disabled = false; btn.textContent = 'Réessayer';
+      return;
+    }
     state.reve.contexte = contexte;
     if (journalSeul()) { state.view = 'restitution'; render(); return; }
     await runRestitution(contexte);
