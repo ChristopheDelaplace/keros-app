@@ -246,6 +246,7 @@
   .gr-star { color: var(--accent); font-size: 15px; }
   .journal-row .gr-col { flex-shrink: 0; width: 40px; text-align: right; }
   .gr-star.sug { color: var(--ink-faint); }
+  .pastille-tr { vertical-align: middle; display: inline-block; }
   .gr-filter { display: block; margin: -4px auto 12px; border: 1px solid var(--line); background: var(--card); color: var(--ink-soft); border-radius: 999px; padding: 5px 14px; font-size: 12.5px; font-family: 'Work Sans', sans-serif; cursor: pointer; }
   .gr-filter.on { border-color: var(--accent); color: var(--accent); background: var(--accent-soft, var(--card)); }
   .gr-box { text-align: center; margin: -6px 0 16px; }
@@ -1900,7 +1901,8 @@ const MOIS_NOMS = ['janvier','février','mars','avril','mai','juin','juillet','a
 // Rêve travaillé : au moins une association ou une réaction du rêveur (remplace le tag « grand rêve »)
 const travaille = r => !!((r.commentaire || '').trim() || (r.mc || []).some(m => (m.associations || []).length));
 const grandEtat = r => travaille(r) ? 'oui' : '';
-const grandStar = r => travaille(r) ? `<span class="gr-star" title="${L('Rêve travaillé', 'Worked dream')}">★</span>` : '';
+const pastilleTravaille = (t = 18) => `<svg class="pastille-tr" width="${t}" height="${t}" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="50" fill="var(--accent)"/><path d="M 43 30 L 43 68 L 26 68 M 57 30 L 57 68 L 74 68" stroke="#fff" stroke-width="8" fill="none" stroke-linecap="square"/></svg>`;
+const grandStar = r => travaille(r) ? `<span class="gr-star" title="${L('Rêve travaillé', 'Worked dream')}">${pastilleTravaille()}</span>` : '';
 function grandBoxHtml(r) {
   return ''; // tag « grand rêve » retiré
   const e = grandEtat(r);
@@ -1969,7 +1971,7 @@ function renderJournal() {
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg>
           <input id="journal-search" type="search" placeholder="Rechercher dans vos rêves" autocomplete="off" value="${escapeHtml(state.journalQuery || '')}">
         </div>
-        ${state.journal.some(r => ['oui', 'suggere'].includes(grandEtat(r))) ? `<button class="gr-filter${state.joGrands ? ' on' : ''}" id="gr-filter">${L('★ Rêves travaillés', '★ Worked dreams')} (${state.journal.filter(r => ['oui', 'suggere'].includes(grandEtat(r))).length})</button>` : ''}
+        ${state.journal.some(r => ['oui', 'suggere'].includes(grandEtat(r))) ? `<button class="gr-filter${state.joGrands ? ' on' : ''}" id="gr-filter">${pastilleTravaille(14)} ${L('Rêves travaillés', 'Worked dreams')} (${state.journal.filter(r => ['oui', 'suggere'].includes(grandEtat(r))).length})</button>` : ''}
         <div class="search-count" id="search-count"></div>
       ` : ''}
       <div class="journal-head">
