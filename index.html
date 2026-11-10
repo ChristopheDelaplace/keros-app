@@ -1900,7 +1900,7 @@ const MOIS_NOMS = ['janvier','février','mars','avril','mai','juin','juillet','a
 // Rêve travaillé : au moins une association ou une réaction du rêveur (remplace le tag « grand rêve »)
 const travaille = r => !!((r.commentaire || '').trim() || (r.mc || []).some(m => (m.associations || []).length));
 const grandEtat = r => travaille(r) ? 'oui' : '';
-const grandStar = r => travaille(r) ? `<span class="gr-star" title="${L('Rêve travaillé', 'Worked dream')}">◆</span>` : '';
+const grandStar = r => travaille(r) ? `<span class="gr-star" title="${L('Rêve travaillé', 'Worked dream')}">★</span>` : '';
 function grandBoxHtml(r) {
   return ''; // tag « grand rêve » retiré
   const e = grandEtat(r);
@@ -1969,7 +1969,7 @@ function renderJournal() {
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg>
           <input id="journal-search" type="search" placeholder="Rechercher dans vos rêves" autocomplete="off" value="${escapeHtml(state.journalQuery || '')}">
         </div>
-        ${state.journal.some(r => ['oui', 'suggere'].includes(grandEtat(r))) ? `<button class="gr-filter${state.joGrands ? ' on' : ''}" id="gr-filter">${L('◆ Rêves travaillés', '◆ Worked dreams')} (${state.journal.filter(r => ['oui', 'suggere'].includes(grandEtat(r))).length})</button>` : ''}
+        ${state.journal.some(r => ['oui', 'suggere'].includes(grandEtat(r))) ? `<button class="gr-filter${state.joGrands ? ' on' : ''}" id="gr-filter">${L('★ Rêves travaillés', '★ Worked dreams')} (${state.journal.filter(r => ['oui', 'suggere'].includes(grandEtat(r))).length})</button>` : ''}
         <div class="search-count" id="search-count"></div>
       ` : ''}
       <div class="journal-head">
