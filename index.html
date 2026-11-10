@@ -195,6 +195,10 @@
   .kw-meta { display: flex; justify-content: space-between; margin-top: 8px; font-size: 10.5px; color: var(--ink-faint); font-family: 'IBM Plex Mono', monospace; }
   .kw-next { margin-top: 12px; width: 100%; padding: 11px; border: none; border-radius: 10px; background: var(--ink); color: var(--card); font-weight: 600; font-size: 13px; cursor: pointer; }
   .kw-next:disabled { opacity: 0.4; }
+  .kw-add { display: flex; gap: 8px; margin-top: 10px; }
+  .kw-add input { flex: 1; min-width: 0; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--card); color: var(--ink); font-size: 13px; font-family: inherit; }
+  .kw-add button { border: 1px solid var(--line); background: transparent; color: var(--ink-soft); border-radius: 10px; padding: 0 12px; font-size: 13px; cursor: pointer; }
+  .kw-add button:disabled { opacity: 0.4; cursor: default; }
 
   .progress-row { display: flex; align-items: center; justify-content: flex-end; padding: 6px 0 14px; }
   .progress-dots { display: flex; gap: 5px; }
@@ -1445,6 +1449,7 @@ function renderAssociations() {
         <textarea class="kw-input" id="kw-answer" maxlength="120" placeholder="Ce qui vient, sans réfléchir…"></textarea>
         <div class="kw-meta"><span>120 caractères max</span><span id="kw-count">0 / 120</span></div>
         <button class="kw-next" id="kw-next" disabled>${idx === total - 1 ? 'Continuer →' : 'Mot-clé suivant →'}</button>
+        <div class="kw-add"><input id="kw-add-in" maxlength="60" placeholder="${L('Un autre mot du rêve…', 'Another word from the dream…')}"><button id="kw-add-btn" disabled>${L('＋ Ajouter', '＋ Add')}</button></div>
       </div>
     </div>
   `);
@@ -1456,6 +1461,19 @@ function renderAssociations() {
     counter.textContent = `${ta.value.length} / 120`;
     next.disabled = !ta.value.trim();
   };
+  if (current.association) { ta.value = current.association; ta.oninput(); }
+  // Mots-clés libres : le rêveur ajoute autant de mots qu'il veut, associés à la suite
+  const addIn = $('#kw-add-in'), addBtn = $('#kw-add-btn');
+  addIn.oninput = () => { addBtn.disabled = !addIn.value.trim(); };
+  const ajouter = () => {
+    const t = addIn.value.trim(); if (!t) return;
+    current.association = ta.value.trim();
+    state.keywords.push({ texte: t, categorie: 'objet', association: '' });
+    renderAssociations();
+    const n = $('#kw-add-in'); if (n) n.focus();
+  };
+  addBtn.onclick = ajouter;
+  addIn.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); ajouter(); } };
   next.onclick = async () => {
     current.association = ta.value.trim();
     next.disabled = true;
@@ -1842,7 +1860,7 @@ async function goJournal() {
   const uid = state.session.user.id;
   const [{ data, error }, { data: syn }] = await Promise.all([
     // liste allégée : la lecture (restitution) n'est chargée qu'à l'ouverture d'un rêve
-    sb.from('reves').select('id, user_id, numero, date, date_precision, nom, sentiment, contexte, lecture, tier_utilise, transcription, lecture_statut, lecture_debut, grand_reve, gr_ia:fiche->grand_reve, created_at, avant_m, commentaire, commentaire_at').eq('user_id', uid).order('date', { ascending: false }).order('created_at', { ascending: false }).order('numero', { ascending: false, nullsFirst: true }),
+    sb.from('reves').select('id, user_id, numero, date, date_precision, nom, sentiment, contexte, lecture, tier_utilise, transcription, lecture_statut, lecture_debut, grand_reve, created_at, avant_m, commentaire, commentaire_at, mc:mots_cles(associations(id))').eq('user_id', uid).order('date', { ascending: false }).order('created_at', { ascending: false }).order('numero', { ascending: false, nullsFirst: true }),
     sb.from('syntheses').select('created_at, nb_reves').eq('user_id', uid).eq('statut', 'ok').order('created_at', { ascending: false }).limit(1),
   ]);
   state.journal = error ? [] : data;
@@ -1879,10 +1897,12 @@ function renderJournalLoading() {
 // Au-delà de JOURNAL_GROUP_MIN rêves, le journal se replie par année puis par mois
 const JOURNAL_GROUP_MIN = 30;
 const MOIS_NOMS = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
-// Grand rêve : confirmé par le rêveur (oui/non) ou suggéré par la fiche IA
-const grandEtat = r => r.grand_reve === true ? 'oui' : r.grand_reve === false ? 'non' : (r.gr_ia && r.gr_ia.suggere ? 'suggere' : '');
-const grandStar = r => { const e = grandEtat(r); return e === 'oui' ? '<span class="gr-star" title="Grand rêve">★</span>' : e === 'suggere' ? '<span class="gr-star sug" title="Grand rêve suggéré">☆</span>' : ''; };
+// Rêve travaillé : au moins une association ou une réaction du rêveur (remplace le tag « grand rêve »)
+const travaille = r => !!((r.commentaire || '').trim() || (r.mc || []).some(m => (m.associations || []).length));
+const grandEtat = r => travaille(r) ? 'oui' : '';
+const grandStar = r => travaille(r) ? `<span class="gr-star" title="${L('Rêve travaillé', 'Worked dream')}">◆</span>` : '';
 function grandBoxHtml(r) {
+  return ''; // tag « grand rêve » retiré
   const e = grandEtat(r);
   if (e === 'oui') return `<div class="gr-box"><span class="gr-lab">★ Grand rêve</span> <button class="link-btn" data-gr="null">Retirer</button></div>`;
   if (e === 'suggere') return `<div class="gr-box gr-card"><div class="gr-q"><button class="st" data-gr="true" aria-label="Confirmer">☆</button>Est-ce un grand rêve ?</div><div class="gr-raison">${L('mykeros le pense : ', 'mykeros thinks so: ')}${r.gr_ia && r.gr_ia.raison ? escapeHtml(r.gr_ia.raison.charAt(0).toLowerCase() + r.gr_ia.raison.slice(1)) : L('ce rêve semble rare et marquant.', 'this dream seems rare and striking.')}</div><div class="gr-btns"><button class="gr-oui" data-gr="true">★ Oui, c'est un grand rêve</button><button class="gr-non" data-gr="false">Non</button></div></div>`;
@@ -1949,7 +1969,7 @@ function renderJournal() {
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg>
           <input id="journal-search" type="search" placeholder="Rechercher dans vos rêves" autocomplete="off" value="${escapeHtml(state.journalQuery || '')}">
         </div>
-        ${state.journal.some(r => ['oui', 'suggere'].includes(grandEtat(r))) ? `<button class="gr-filter${state.joGrands ? ' on' : ''}" id="gr-filter">★ Grands rêves (${state.journal.filter(r => ['oui', 'suggere'].includes(grandEtat(r))).length})</button>` : ''}
+        ${state.journal.some(r => ['oui', 'suggere'].includes(grandEtat(r))) ? `<button class="gr-filter${state.joGrands ? ' on' : ''}" id="gr-filter">${L('◆ Rêves travaillés', '◆ Worked dreams')} (${state.journal.filter(r => ['oui', 'suggere'].includes(grandEtat(r))).length})</button>` : ''}
         <div class="search-count" id="search-count"></div>
       ` : ''}
       <div class="journal-head">
