@@ -736,7 +736,10 @@ function signalerOuverture() {
   if (!state.session || !state.profile) return;
   if (Date.now() - ouvertureSignaleeLe < 30 * 60 * 1000) return;
   ouvertureSignaleeLe = Date.now();
-  sb.rpc('signaler_ouverture', { p_version: APP_VERSION }).then(() => {}, () => {});
+  // Préfixe la version : « pwa » si l'app est installée sur l'écran d'accueil, « web » si elle est ouverte dans un onglet
+  let installee = false;
+  try { installee = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true; } catch (e) {}
+  sb.rpc('signaler_ouverture', { p_version: (installee ? 'pwa ' : 'web ') + APP_VERSION }).then(() => {}, () => {});
 }
 const PAGES_REPRISES = ['journal', 'restitution', 'restituting', 'restitution-error', 'synthese', 'compte', 'referentiel'];
 function memoriserPage() {
@@ -2627,7 +2630,7 @@ function render() {
 }
 
 // ---------- MISE À JOUR AUTOMATIQUE (app installée) ----------
-const APP_VERSION = '2026-11-09a';
+const APP_VERSION = '2026-11-11a';
 const SAFE_VIEWS = ['auth', 'journal', 'compte', 'synthese', 'legal', 'avant-ok', 'restitution'];
 async function checkUpdate() {
   if (location.protocol.indexOf('http') !== 0) return;
