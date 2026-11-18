@@ -2781,7 +2781,39 @@ async function renderReferentiel() {
 
 // ---------- RENDER DISPATCH ----------
 const GLYPH_HOME_VIEWS = ['journal', 'compte', 'referentiel', 'synthese', 'restitution', 'avant-ok', 'legal'];
+// Nouvelle acceptation exigée quand la version des CGU et de la politique a changé
+const consentRequis = () => !!(state.session && state.session.user && !state.recovery && (state.session.user.user_metadata || {}).consent_version !== CONSENT_VERSION);
+function renderConsent() {
+  const fg = document.getElementById('footer-glyph'); if (fg) fg.classList.remove('on');
+  h(`
+    <div class="view rest-view">
+      <div class="auth-image"><img src="mykeros-figure-cutout.png" alt=""></div>
+      <div class="journal-title display">${L('Nos conditions ont évolué', 'Our terms have changed')}</div>
+      <div class="rest-block"><p>${L('Pour continuer, merci de prendre connaissance des nouvelles conditions d\'utilisation et de la nouvelle politique de confidentialité. Elles précisent notamment les données traitées et la réutilisation des textes générés par l\'IA.', 'To continue, please read the new terms of use and privacy policy. They notably clarify the data processed and the reuse of AI-generated text.')}</p></div>
+      <label class="check-row"><input type="checkbox" id="consent-ok"><span>${L(`J'accepte les <a data-legal="cgu">conditions d'utilisation</a> et la <a data-legal="confidentialite">politique de confidentialité</a>, y compris le traitement de mes récits de rêves (données potentiellement sensibles).`, `I accept the <a data-legal="cgu">terms of use</a> and the <a data-legal="confidentialite">privacy policy</a>, including the processing of my dream accounts (potentially sensitive data).`)}</span></label>
+      <div id="consent-msg"></div>
+      <div class="footer-actions" style="flex-direction:column">
+        <button class="btn btn-primary btn-block" id="consent-go" disabled>${L('Accepter et continuer', 'Accept and continue')}</button>
+        <button class="btn btn-ghost btn-block" id="consent-out">${L('Me déconnecter', 'Log out')}</button>
+      </div>
+    </div>
+  `);
+  bindLegalLinks('recueil');
+  const ok = $('#consent-ok'), go = $('#consent-go');
+  ok.onchange = () => { go.disabled = !ok.checked; };
+  $('#consent-out').onclick = async () => { await sb.auth.signOut(); };
+  go.onclick = async () => {
+    go.disabled = true;
+    const donnees = { consent_at: new Date().toISOString(), consent_version: CONSENT_VERSION };
+    const { error } = await sb.auth.updateUser({ data: donnees });
+    if (error) { $('#consent-msg').innerHTML = `<div class="msg error">${escapeHtml(L('Enregistrement impossible. Réessayez dans un instant.', 'Could not save. Please try again in a moment.'))}</div>`; go.disabled = false; return; }
+    state.session.user.user_metadata = { ...(state.session.user.user_metadata || {}), ...donnees };
+    await loadProfileAndGo();
+  };
+}
+
 function render() {
+  if (consentRequis() && !['legal', 'reset', 'auth'].includes(state.view)) return renderConsent();
   memoriserPage();
   const fg = document.getElementById('footer-glyph');
   if (fg) fg.classList.toggle('on', !!state.session && GLYPH_HOME_VIEWS.includes(state.view));
@@ -2811,7 +2843,7 @@ function render() {
 }
 
 // ---------- MISE À JOUR AUTOMATIQUE (app installée) ----------
-const APP_VERSION = '2026-11-18e';
+const APP_VERSION = '2026-11-18f';
 const SAFE_VIEWS = ['auth', 'journal', 'compte', 'synthese', 'legal', 'avant-ok', 'restitution'];
 async function checkUpdate() {
   if (location.protocol.indexOf('http') !== 0) return;
