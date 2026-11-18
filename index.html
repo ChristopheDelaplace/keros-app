@@ -1046,6 +1046,7 @@ function manquePonctuation(t) {
   return p < mots / 25;
 }
 async function ponctuerTexte(t) {
+  if (journalSeul()) return null; // mode journal seul : rien n'est envoyé à l'IA
   const { data, error } = await sb.functions.invoke('ponctuer', { body: { texte: t } });
   if (error || !data || !data.texte) return null;
   return data.modifie ? data.texte : null;
@@ -1135,7 +1136,7 @@ function renderRecueil() {
     const el = $('#recit-text');
     if (!el || !dicte.trim()) return;
     const avant = el.value;
-    if (!manquePonctuation(avant)) return;
+    if (journalSeul() || !manquePonctuation(avant)) return;
     micHint.textContent = 'Ajout de la ponctuation…';
     el.readOnly = true;
     let res = null;
@@ -1400,6 +1401,8 @@ function renderNom() {
 
 // ---------- ASSOCIATIONS ----------
 async function startAssociations() {
+  // Mode journal seul : le rêveur choisit ses mots, le récit n'est pas envoyé à l'IA
+  if (journalSeul()) { state.keywords = []; state.kwIndex = 0; state.view = 'mots-libres'; render(); return; }
   state.view = 'extracting';
   render();
   try {
@@ -1422,6 +1425,40 @@ async function startAssociations() {
     state.view = 'extract-error';
     render();
   }
+}
+
+function renderMotsLibres() {
+  const mots = state.keywords;
+  h(`
+    ${topNav(true)}
+    <div class="view rest-view">
+      <div class="auth-image"><img src="mykeros-figure-cutout.png" alt=""></div>
+      <div class="step-title">${L('Vos mots-clés', 'Your keywords')}</div>
+      <div class="kw-history">
+        ${mots.map((k, i) => `<div class="kw-row"><span class="k">${escapeHtml(k.texte)}</span><span class="a"><button class="link-btn" data-del="${i}" style="padding:0">${L('Retirer', 'Remove')}</button></span></div>`).join('')}
+      </div>
+      <div class="step-card" style="margin-top:auto;">
+        <div class="a-label">${L('Quels mots de ce rêve voulez-vous garder ?', 'Which words from this dream do you want to keep?')}</div>
+        <div class="kw-add" style="margin-bottom:12px"><input id="kw-add-in" maxlength="60" placeholder="${L('Un mot du rêve…', 'A word from the dream…')}"><button id="kw-add-btn" disabled>${L('＋ Ajouter', '＋ Add')}</button></div>
+        <button class="kw-next" id="kw-go"${mots.length ? '' : ' disabled'}>${L('Passer aux associations →', 'Go to associations →')}</button>
+        <div style="text-align:center;margin-top:10px"><button class="link-btn" id="kw-skip">${L('Continuer sans mot-clé', 'Continue without keywords')}</button></div>
+      </div>
+    </div>
+  `);
+  bindTopNav();
+  const addIn = $('#kw-add-in'), addBtn = $('#kw-add-btn');
+  addIn.oninput = () => { addBtn.disabled = !addIn.value.trim(); };
+  const ajouter = () => {
+    const t = addIn.value.trim(); if (!t) return;
+    mots.push({ texte: t, categorie: 'objet', association: '' });
+    renderMotsLibres();
+    const n = $('#kw-add-in'); if (n) n.focus();
+  };
+  addBtn.onclick = ajouter;
+  addIn.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); ajouter(); } };
+  root.querySelectorAll('[data-del]').forEach(b => { b.onclick = () => { mots.splice(Number(b.dataset.del), 1); renderMotsLibres(); }; });
+  $('#kw-go').onclick = () => { state.kwIndex = 0; state.view = 'associations'; render(); };
+  $('#kw-skip').onclick = () => { state.keywords = []; state.view = 'contexte'; render(); };
 }
 
 function renderExtracting() {
@@ -1727,7 +1764,7 @@ function bindRecit(reve) {
     ta.value = reve.transcription || '';
     ta.focus();
     const pb = box.querySelector('#rc-punct');
-    if (manquePonctuation(ta.value)) pb.hidden = false;
+    if (!journalSeul() && manquePonctuation(ta.value)) pb.hidden = false;
     pb.onclick = async () => {
       const avant = ta.value;
       pb.disabled = true; pb.textContent = 'Ponctuation…'; ta.readOnly = true;
@@ -2754,6 +2791,7 @@ function render() {
     case 'avant-ok': return renderAvantOk();
     case 'sentiment': return renderSentiment();
     case 'nom': return renderNom();
+    case 'mots-libres': return renderMotsLibres();
     case 'extracting': return renderExtracting();
     case 'extract-error': return renderExtractError();
     case 'associations': return renderAssociations();
@@ -2768,7 +2806,7 @@ function render() {
 }
 
 // ---------- MISE À JOUR AUTOMATIQUE (app installée) ----------
-const APP_VERSION = '2026-11-18c';
+const APP_VERSION = '2026-11-18d';
 const SAFE_VIEWS = ['auth', 'journal', 'compte', 'synthese', 'legal', 'avant-ok', 'restitution'];
 async function checkUpdate() {
   if (location.protocol.indexOf('http') !== 0) return;
